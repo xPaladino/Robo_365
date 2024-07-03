@@ -1,34 +1,20 @@
-import os
-import re
-import base64
-import tempfile
+import os,re,base64,tempfile
 from PyPDF2 import PdfReader
 from pdfminer.high_level import extract_text
 
-
-def process_attachments(message, save_folder, nf_pdf_map):
-    corpo_email = message.body
-    if re.search(r'@viterra\.com', corpo_email):
-        print('tem viterra')
-        pass
-    elif re.search(r'@bunge\.com', corpo_email):
-        print('tem bunge')
-        pass
-    else:
+def process_adm(message, save_folder, nf_pdf_map):
+    if re.search(r'@adm\.com',message.body):
+        print('tem ADM')
         if message.attachments:
-            print(f"{message.received} - {message.subject}")
+            print(f'{message.received} - {message.subject}')
             for attachment in message.attachments:
                 file_extension = os.path.splitext(attachment.name)[1].lower()
                 if file_extension == ".pdf":
                     decoded_content = base64.b64decode(attachment.content)
-                    print(f"Processing attachment: {attachment.name}")
                     with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_pdf:
-                        #temp_pdf.write(attachment.content)
-
                         temp_pdf.write(decoded_content)
                         temp_pdf_path = temp_pdf.name
-                        print(f"Attachment saved as temporary file: {temp_pdf_path}")
-                        pdf_reader = extract_text(temp_pdf.name)
+                        pdf_reader = extract_text(temp_pdf_path)
                         notas_fiscais = []
                         notas_fiscais.extend(re.finditer(
                             r'(?:#NF:|Nota\s+Fiscal:|fiscais:|NF:|'  # padrao
@@ -43,6 +29,7 @@ def process_attachments(message, save_folder, nf_pdf_map):
                             pdf_reader, re.IGNORECASE))
                         if not notas_fiscais:
                             notas_fiscais.append(0)
+
                         chave_acesso_match = (re.findall(
                             r'(?<!NFe Ref\.:\()\b\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\b|'
                             r'(?:CHAVE\s+DE\s+ACESSO\s+P/\s+CONSULTA\s+DE\s+AUTENTICIDADE\s*(\d{44}))',
@@ -94,10 +81,15 @@ def process_attachments(message, save_folder, nf_pdf_map):
                                 segundo_cnpj.append(cnpj_match[1])
                         if not segundo_cnpj:
                             segundo_cnpj.append(0)
-                        for nf, chaves, serie_match, data_match, cnpj, nfe in zip(notas_fiscais, chave_acesso_match,
+                        #print(segundo_cnpj)
+                        cnpj_adm = '02003402007269'
+                        notas_fiscais = sorted(list(set(notas_fiscais)))
+
+                        for nf, chaves, serie_match, data_match, cnpj in zip(notas_fiscais, chave_acesso_match,
                                                                                   serie_matches, data_matches,
-                                                                                  segundo_cnpj, nfe_match):
+                                                                                  segundo_cnpj):
                             if nf == 0:
+                               """ #print('a')
                                 if chaves != 0:
                                     chave = ''.join(chaves.split())
                                     # print(chave)
@@ -111,16 +103,16 @@ def process_attachments(message, save_folder, nf_pdf_map):
                                     cnpj_segundo = cnpj.group(0)
                                 else:
                                     cnpj_segundo = 'NÃO ENCONTREI CNPJ'
-                                if nfe.group() != 0:
-                                    nfe_formatado = nfe.group(1)
-                                else:
-                                    nfe_formatado = 'NÃO ENCONTREI NOTA COMP'
+                                #if nfe.group() != 0:
+                                #    nfe_formatado = nfe.group(1)
+                                #else:
+                                #    nfe_formatado = 'NÃO ENCONTREI NOTA COMP'
 
                                 data_emissao = 'NÃO ENCONTREI DATA'
                                 nf_formatado = nf
-                                nfe_semponto = nfe_formatado.replace('.', '')
-                                nfe_semzero = nfe_semponto if nfe_semponto[
-                                                              0:4] != '0000' else nfe_semponto[4:]
+                                #nfe_semponto = nfe_formatado.replace('.', '')
+                                #nfe_semzero = nfe_semponto if nfe_semponto[
+                                #                              0:4] != '0000' else nfe_semponto[4:]
                                 cn_tratada = re.sub(r'[./-]', '', cnpj_segundo)
                                 nf_pdf_map[message.subject] = {
                                     'nota_fiscal': nf,
@@ -129,22 +121,39 @@ def process_attachments(message, save_folder, nf_pdf_map):
                                     'email_vinculado': message.subject,
                                     'serie_nf': serie,
                                     'data_emissao': data_emissao,
-                                    'cnpj': cn_tratada,
-                                    'nfe': nfe_semzero,
-                                    'chave_comp': '0'
-                                }
+                                    'cnpj': cnpj_adm,
+                                    'nfe': '0',
+                                    'chave_comp': '0',
+                                    'transportadora' : 'ADM'
+                                }"""
+                               pass
                             elif chaves == 0:
-                                pass
+                                nf_formatado = nf.group(1)
+                                #print(serie_match)
+                                nf_pdf_map[nf_formatado] = {
+                                    'nota_fiscal': nf_formatado,
+                                    'data_email': message.received,
+                                    'chave_acesso': '0',
+                                    'email_vinculado': message.subject,
+                                    'serie_nf': serie_match,
+                                    'data_emissao': '0',
+                                    'cnpj': cnpj_adm,
+                                    'nfe': '0',
+                                    'chave_comp': '0',
+                                    'transportadora': 'ADM'
+                                }
+
                             elif re.match(r'^\d{1,3}$', str(serie_match.group(2))):
+                                #print('c')
                                 chave = ''.join(chaves.split())
                                 serie = serie_match.group(2)
                                 nf_formatado = nf.group(1)
                                 cnpj_segundo = cnpj.group(0)
                                 cn_tratada = re.sub(r'[./-]', '', cnpj_segundo)
-                                nfe_formatado = nfe.group(1)
-                                nfe_semponto = nfe_formatado.replace('.', '')
-                                nfe_semzero = nfe_semponto if nfe_semponto[
-                                                              0:4] != '0000' else nfe_semponto[4:]
+                                #nfe_formatado = nfe.group(1)
+                                #nfe_semponto = nfe_formatado.replace('.', '')
+                                #nfe_semzero = nfe_semponto if nfe_semponto[
+                                #                              0:4] != '0000' else nfe_semponto[4:]
                                 data_pdf = data_match.group(2)
                                 data_emissao = data_pdf.replace('.', '/') if data_match else '0'
 
@@ -155,20 +164,22 @@ def process_attachments(message, save_folder, nf_pdf_map):
                                     'email_vinculado': message.subject,
                                     'serie_nf': serie,
                                     'data_emissao': data_emissao,
-                                    'cnpj': cn_tratada,
-                                    'nfe': nfe_semzero,
-                                    'chave_comp': '0'
+                                    'cnpj': cnpj_adm,
+                                    'nfe': '0',
+                                    'chave_comp': '0',
+                                    'transportadora' : 'ADM'
                                 }
                             elif data_match != 0 and data_match.group(1) is not None:
+                                #print('d')
                                 # feito para tratar a royal
                                 chave = ''.join(chaves.split())
                                 serie = serie_match.group(3)
                                 nf_formatado = nf.group(1)
                                 cnpj_segundo = cnpj.group(0)
                                 cn_tratada = re.sub(r'[./-]', '', cnpj_segundo)
-                                nfe_formatado = nfe.group(1)
-                                nfe_semponto = nfe_formatado.replace('.', '')
-                                nfe_semzero = nfe_semponto if nfe_semponto[0:4] != '0000' else nfe_semponto[4:]
+                                #nfe_formatado = nfe.group(1)
+                                #nfe_semponto = nfe_formatado.replace('.', '')
+                                #nfe_semzero = nfe_semponto if nfe_semponto[0:4] != '0000' else nfe_semponto[4:]
                                 data_pdf = data_match.group(1)
                                 data_emissao = data_pdf.replace('.', '/') if data_match else '0'
                                 nf_pdf_map[nf_formatado] = {
@@ -178,21 +189,24 @@ def process_attachments(message, save_folder, nf_pdf_map):
                                     'email_vinculado': message.subject,
                                     'serie_nf': serie,
                                     'data_emissao': data_emissao,
-                                    'cnpj': cn_tratada,
-                                    'nfe': nfe_semzero,
-                                    'chave_comp': '0'
+                                    'cnpj': cnpj_adm,
+                                    'nfe': '0',
+                                    'chave_comp': '0',
+                                    'transportadora': 'ADM'
 
                                 }
                             else:
+                                #print('e')
                                 # feito para tratar a royal
                                 chave = ''.join(chaves.split())
                                 serie = serie_match.group(3)
                                 nf_formatado = nf.group(1)
                                 cnpj_segundo = cnpj.group(0)
+
                                 cn_tratada = re.sub(r'[./-]', '', cnpj_segundo)
-                                nfe_formatado = nfe.group(1)
-                                nfe_semponto = nfe_formatado.replace('.', '')
-                                nfe_semzero = nfe_semponto if nfe_semponto[0:4] != '0000' else nfe_semponto[4:]
+                                #nfe_formatado = nfe.group(1)
+                                #nfe_semponto = nfe_formatado.replace('.', '')
+                                #nfe_semzero = nfe_semponto if nfe_semponto[0:4] != '0000' else nfe_semponto[4:]
                                 data_pdf = data_match.group(3)
                                 if nf_formatado is None:
                                     nf_formatado = nf.group(2).replace('.', '')  # tratamento para agricola gemelli
@@ -204,16 +218,12 @@ def process_attachments(message, save_folder, nf_pdf_map):
                                     'email_vinculado': message.subject,
                                     'serie_nf': serie,
                                     'data_emissao': data_emissao,
-                                    'cnpj': cn_tratada,
-                                    'nfe': nfe_semzero,
-                                    'chave_comp': '0'
+                                    'cnpj': cnpj_adm,
+                                    'nfe': '0',
+                                    'chave_comp': '0',
+                                    'transportadora': 'ADM'
                                 }
                         # print("iniciando remoção")
                     os.remove(temp_pdf.name)
 
-                # Aqui você pode adicionar lógica para salvar ou processar o anexo
-                # Exemplo: salvar como arquivo temporário
-                # with open(os.path.join(save_folder, attachment.name), 'wb') as f:
-                #     f.write(attachment.content)
-        else:
-            print(f"Sem anexos no e-mail: {message.subject}")
+

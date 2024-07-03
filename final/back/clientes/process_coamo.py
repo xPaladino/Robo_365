@@ -8,9 +8,8 @@ from PyPDF2 import PdfReader
 from pdfminer.high_level import extract_text
 
 def process_coamo(message, salve_folder, nf_zip_map):
-    corpo_email = message.body
     print(f"{message.received} - {message.subject}")
-    if re.search(r'@coamo\.com\.br', corpo_email):
+    if re.search(r'@coamo\.com\.br', message.body):
         print('tem coamo')
         if message.attachments:
                 for attachment in message.attachments:
@@ -70,7 +69,7 @@ def process_coamo(message, salve_folder, nf_zip_map):
                                                 segundo_cnpj.append(cnpj_match[1])
                                             if not segundo_cnpj:
                                                 segundo_cnpj.append(0)
-                                            # print(f'Segundo {segundo_cnpj}')
+
                                             nfe_match.extend(
                                                 re.finditer(r'(?:NF-e\s+Nº\s+|NF-e\s+Nº.\s+)(\d{3}.\d{3}.\d{3})|'
                                                             r'\d{3}\.\d{3}\.\d{3}', pdf_text,
@@ -119,5 +118,6 @@ def process_coamo(message, salve_folder, nf_zip_map):
                                                     'serie_nf': series,
                                                     'data_emissao': '0',
                                                     'cnpj': cnpj_tratado,
-                                                    'nfe': nfe_ajust
+                                                    'nfe': nfe_ajust,
+                                                    'transportadora': 'COAMO'
                                                 }
