@@ -164,6 +164,35 @@ def save_to_excel(nf_pdf_map, nf_zip_map, nf_excel_map, file_name):
     except Exception as e:
         print(f"Erro ao salvar a planilha vinda do ZIP {e}")
 
+    """try:
+        for valor, info in nf_zip_map.items():
+            ws.cell(row=row_index, column=1, value="ZIP")
+            if isinstance(info['data_email'], datetime):
+                ws.cell(row=row_index, column=2, value=info['data_email'].strftime('%Y-%m-%d %H:%M:%S'))
+            else:
+                ws.cell(row=row_index, column=2, value=str(info['data_email']))
+            #ws.cell(row=row_index, column=3, value=str(resultado[2]))
+            ws.cell(row=row_index, column=4, value=str(info['serie_nf'] if info['serie_nf'] != '0' else '0'))
+            ws.cell(row=row_index, column=5, value=str(info.get('nota_fiscal', 'não encontrei NF')))
+            #ws.cell(row=row_index, column=5, value=str(resultado[0]))
+            ws.cell(row=row_index, column=6, value=str(info['nfe'] if info['nfe'] != '0' else '0'))
+            # ws.cell(row=row_index, column=6, value=info['data_emissao'] if info['data_emissao'] != '0' else '0')
+            #ws.cell(row=row_index, column=8, value=resultado[1])
+            #ws.cell(row=row_index, column=7, value=data_ajustada)  # DATA DESCARGA
+            # ws.cell(row=row_index, column=8, value=info['chave_acesso'] if info['chave_acesso'] != '0' else str(resultado[1]))
+
+            ws.cell(row=row_index, column=9, value=info['chave_comp'] if info['chave_comp'] != '0' else '0')
+            #ws.cell(row=row_index, column=10, value=str(resultado[4]).replace('.', ','))  # PESO
+            #ws.cell(row=row_index, column=11, value=str(resultado[7]))  # LOTE
+            #ws.cell(row=row_index, column=12, value=str(resultado[9]))  # PRODUTO
+            ws.cell(row=row_index, column=13, value=info['cnpj'] if info['cnpj'] != '0' else '0')
+            ws.cell(row=row_index, column=14, value=info.get('email_vinculado', ''))
+
+            trocar_cores(ws, row_index)
+            row_index += 1
+    except Exception as e:
+        print(f"Erro ao salvar a planilha vinda do ZIP {e}")"""
+
     try:
         if not nf_excel_map:
             print('nenhum arquivo')
@@ -215,13 +244,13 @@ def conecta_sql(nf_zip_map, nf_pdf_map, nf_excel_map):#, file_name):
     senha = os.getenv('DB_PASSWORD')
 
 
-    consulta_nfe_zip = ', '.join([f"'{info.get('nfe', '0')}'" for valor, info in nf_zip_map.items()])
+    #consulta_nfe_zip = ', '.join([f"'{info.get('nfe', '0')}'" for valor, info in nf_zip_map.items()])
     #consulta_nfe_pdf = ', '.join([f"'{info.get('nfe', '0')}'" for valor, info in nf_pdf_map.items()])
-    consulta_nfe_excel=', '.join([f"'{info.get('nfe', '0')}'" for info in nf_excel_map])
+    #consulta_nfe_excel=', '.join([f"'{info.get('nfe', '0')}'" for info in nf_excel_map])
 
-    chaves_consulta_zip = ', '.join([f"'{info.get('nota_fiscal', '0')}'" for valor, info in nf_zip_map.items()])
-    chaves_consulta_pdf = [f"'{info.get('nota_fiscal', '0')}'" for valor, info in nf_pdf_map.items()]
-    chaves_consulta_excel = ', '.join([f"'{info.get('nota_fiscal', '0')}'" for info in nf_excel_map])
+    chaves_consulta_zip =   [f"'{info.get('nota_fiscal', '0')}'" for valor, info in nf_zip_map.items()]
+    chaves_consulta_pdf =   [f"'{info.get('nota_fiscal', '0')}'" for valor, info in nf_pdf_map.items()]
+    chaves_consulta_excel = [f"'{info.get('nota_fiscal', '0')}'"for info in nf_excel_map]
 
     cnpj_consulta_zip = ', '.join([f"'{info.get('cnpj', '0')}'" for valor, info in nf_zip_map.items()])
     cnpj_consulta_pdf = ', '.join([f"'{info.get('cnpj', '0')}'" for valor, info in nf_pdf_map.items()])
@@ -288,12 +317,103 @@ def conecta_sql(nf_zip_map, nf_pdf_map, nf_excel_map):#, file_name):
             Posicao;
         """
         #print(f'consulta pdf : {consulta_pdf}')
-        consulta_zip = f"Select Nota, Chave_nfe, RazaoSocial, cnpj, diferenca, Dt_Emissao, codigo, lote, dtMovimento, Produto" \
-                       f" from eis_v_mapa_estoque_python where (Nota in ({chaves_consulta_zip}) and cnpj in ({cnpj_consulta_zip}) and FlagCompl = 'N') OR" \
-                       f" (Nota in ({consulta_nfe_zip}) and cnpj in ({cnpj_consulta_zip}))"
-        consulta_excel = f"Select Nota, Chave_nfe, RazaoSocial, cnpj, diferenca, Dt_Emissao, codigo, lote, dtMovimento, Produto" \
-                       f" from eis_v_mapa_estoque_python where (Nota in ({chaves_consulta_excel}) and cnpj in ({cnpj_consulta_excel}) and FlagCompl = 'N') OR" \
-                       f" (Nota in ({consulta_nfe_excel}) and cnpj in ({cnpj_consulta_excel}))"
+        #consulta_zip = f"Select Nota, Chave_nfe, RazaoSocial, cnpj, diferenca, Dt_Emissao, codigo, lote, dtMovimento, Produto" \
+        #               f" from eis_v_mapa_estoque_python where (Nota in ({chaves_consulta_zip}) and cnpj in ({cnpj_consulta_zip}) and FlagCompl = 'N')"
+        consulta_zip = f"""
+                WITH ChavesNumeradas AS (
+                    SELECT
+                        Nota,
+                        ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS Posicao
+                    FROM (VALUES {', '.join([f"({nota})" for nota in chaves_consulta_zip])}) AS V(Nota)
+                ),
+                    UltNota AS (SELECT
+                        m.Nota,
+                        m.Chave_nfe,
+                        m.RazaoSocial,
+                        m.cnpj,
+                        m.diferenca,
+                        m.Dt_Emissao,
+                        m.codigo,
+                        m.lote,
+                        m.dtMovimento,
+                        m.Produto,
+                        o.Posicao,
+                        ROW_NUMBER() OVER (PARTITION BY m.Nota ORDER BY m.Dt_Emissao DESC) AS rn
+                    FROM
+                        eis_v_mapa_estoque_python m
+                    JOIN
+                        ChavesNumeradas o ON m.Nota = o.Nota
+                    WHERE
+                        m.cnpj IN ({cnpj_consulta_zip})
+                    )
+                SELECT
+                    Nota,
+                    Chave_nfe,
+                    RazaoSocial,
+                    cnpj,
+                    diferenca,
+                    Dt_Emissao,
+                    codigo,
+                    lote,
+                    dtMovimento,
+                    Produto,
+                    Posicao
+                From
+                    UltNota
+                where
+                    rn = 1
+                ORDER BY
+                    Posicao;
+                """
+        #consulta_excel = f"Select Nota, Chave_nfe, RazaoSocial, cnpj, diferenca, Dt_Emissao, codigo, lote, dtMovimento, Produto" \
+        #               f" from eis_v_mapa_estoque_python where (Nota in ({chaves_consulta_excel}) and cnpj in ({cnpj_consulta_excel}) and FlagCompl = 'N') OR" \
+        #               f" (Nota in ({consulta_nfe_excel}) and cnpj in ({cnpj_consulta_excel}))"
+        consulta_excel = f"""
+                        WITH ChavesNumeradas AS (
+                            SELECT
+                                Nota,
+                                ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS Posicao
+                            FROM (VALUES {', '.join([f"({nota})" for nota in chaves_consulta_excel])}) AS V(Nota)
+                        ),
+                            UltNota AS (SELECT
+                                m.Nota,
+                                m.Chave_nfe,
+                                m.RazaoSocial,
+                                m.cnpj,
+                                m.diferenca,
+                                m.Dt_Emissao,
+                                m.codigo,
+                                m.lote,
+                                m.dtMovimento,
+                                m.Produto,
+                                o.Posicao,
+                                ROW_NUMBER() OVER (PARTITION BY m.Nota ORDER BY m.Dt_Emissao DESC) AS rn
+                            FROM
+                                eis_v_mapa_estoque_python m
+                            JOIN
+                                ChavesNumeradas o ON m.Nota = o.Nota
+                            WHERE
+                                m.cnpj IN ({cnpj_consulta_excel})
+                            )
+                        SELECT
+                            Nota,
+                            Chave_nfe,
+                            RazaoSocial,
+                            cnpj,
+                            diferenca,
+                            Dt_Emissao,
+                            codigo,
+                            lote,
+                            dtMovimento,
+                            Produto,
+                            Posicao
+                        From
+                            UltNota
+                        where
+                            rn = 1
+                        ORDER BY
+                            Posicao;
+                        """
         # consulta_sql = f"Select diferenca from eis_v_mapa_estoque_python where Chave_Nfe on ({chaves_consulta})"
         resultado_pdf, resultado_zip, resultado_excel = [], [], []
 
