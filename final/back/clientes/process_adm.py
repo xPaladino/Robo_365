@@ -1,9 +1,10 @@
-import os,re,base64,tempfile
+import os, re, base64, tempfile
 from PyPDF2 import PdfReader
 from pdfminer.high_level import extract_text
 
 def process_adm(message, save_folder, nf_pdf_map):
-    if re.search(r'@adm\.com',message.body):
+
+    if re.search(r'@adm\.com', message.body):
         print('tem ADM')
         if message.attachments:
             print(f'{message.received} - {message.subject}')
@@ -15,17 +16,21 @@ def process_adm(message, save_folder, nf_pdf_map):
                         temp_pdf.write(decoded_content)
                         temp_pdf_path = temp_pdf.name
                         pdf_reader = extract_text(temp_pdf_path)
+
                         notas_fiscais = []
                         notas_fiscais.extend(re.finditer(
                             r'(?:#NF:|Nota\s+Fiscal:|fiscais:|NF:|'  # padrao
                             r'Ref\s+NF|'  # adicionado royal
                             r'NF\s+n|'  # adicionado royal
                             r'Nfe\s+de\s+n\s+:|'
+                            r'REF.\s+NOTA\s+FISCAL|'
                             r'Referente\s+NF|'
-                            r'REF\s+A\s+NOTA)'  # adicionado para usimat destilaria
-                            r'\s*(?:\d+\s*,\s*)?(\d{4,8})|'  # padrao 
-                            r'ORIGEM\s+NR\.: (\d+(\.\d+)?)|'  # adicionado para agricola gemelli
-                            r'(:?REF\s+NFS\s+)(\d+/\d+/\d+)\s+\((.*?)\)',
+                            r'REF\s+A\s+NOTA|'
+                            r'REF\s+A\s+NOTA\s+N)'  # adicionado para usimat destilaria
+                            r'\s*(?:\d+\s*,\s*)?(\d{3,8})|'  # padrao 
+                            r'ORIGEM\s+NR\.: (\d+(\.\d+)?)|'
+                            r'(:?REF\s+NFS\s+)(\d+/\d+/\d+)\s+\((.*?)\)|'
+                            r'Referente\s+NF\s+(\d{2}\s+\d+)',
                             pdf_reader, re.IGNORECASE))
                         if not notas_fiscais:
                             notas_fiscais.append(0)
@@ -37,193 +42,134 @@ def process_adm(message, save_folder, nf_pdf_map):
                         if not chave_acesso_match:
                             chave_acesso_match.append(0)
 
-                        # print(chave_acesso_match)
                         chave_comp = []
                         chave_comp.extend(
                             re.finditer(
-                                r'(?:CHAVE\s+DE\s+ACESSO\s+P/\s+CONSULTA\s+DE\s+AUTENTICIDADE\s*(\d{44}))',
+                                r'(?:CHAVE\s+DE\s+ACESSO\s+P/\s+CONSULTA\s+DE\s+AUTENTICIDADE\s*(\d{44}))|'
+                                r'\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\b|'
+                                r'NFe\d{44}',
                                 pdf_reader, re.IGNORECASE))
 
                         if not chave_comp:
-                            chave_acesso_match.append(0)
+                            chave_comp.append(0)
 
-                        # print(pdf_reader)
                         serie_matches = []
                         serie_matches.extend(
-                            re.finditer(r'(?:VALOR:\s+)(\d{9}\s+(\d+))|Série\s+(\d{1,})',
-                                        pdf_reader, re.IGNORECASE))
+                            re.finditer(
+                                r'(?:VALOR:\s+)(\d{9}\s+(\d+))|Série\s+(\d{1,})|(?:NF-e\s+\d{3}\.\d{3}\.\d{3}\s+)(\d{1,3})|'
+                                r'(?:Nº\s*SÉRIE:\s*\d+)(\s+\d{1,3})',
+                                pdf_reader, re.IGNORECASE))
                         if not serie_matches:
                             serie_matches.append(0)
+
                         data_matches = []
                         data_matches.extend(re.finditer(
                             r'EMISSÃO\s+(\d{2}\.\d{2}\.\d{2,}|\d{2}/\d{2}/\d{2,})|'
                             r'EMISSAO\s+(\d{2}/\d{2}/\d{2,})|'
-                            r'(?:EMISSÃO:\s+)(\d{2}/\d{2}/\d{2,})'
+                            r'(?:EMISSÃO:\s+)(\d{2}/\d{2}/\d{2,})|'
+                            r'(?:DATA\s+DA\s+EMISSÃO\s*\d{2}.\d{3}.\d{3}/\d{4}-\d{2}\s*)(\d{2}/\d{2}/\d{2,})'
+
                             , pdf_reader, re.IGNORECASE))
                         if not data_matches:
                             data_matches.append(0)
 
                         nfe_match = []
-                        # nfe_match.extend(re.finditer(r'(?:NF-e\s+Nº\s+|NF-e\s+Nº.\s+)(\d+(\.\d+)?)',pdf_reader, re.IGNORECASE))
                         nfe_match.extend(
-                            re.finditer(r'(?:NF-e\s*No.|NF-e\s+Nº)\s+(\d+(?:\.\d+)*)', pdf_reader,
+                            re.finditer(r'(?:NF-e\s*No.|NF-e\s+Nº)\s+(\d+(?:\.\d+)*)|NF-e\s+Nº\s+(\d+\s+\d+\s+\d+)',
+                                        pdf_reader,
                                         re.IGNORECASE))
-                        segundo_cnpj = []
+
                         pdf_reader2 = PdfReader(temp_pdf)
                         pdf_text = ''
                         for page in pdf_reader2.pages:
                             pdf_text += page.extract_text()
-                            cnpj_match = []
-                            cnpj_match.extend(
-                                re.finditer(r'(\d{2}.\d{3}.\d{3}/\d{4}-\d{2})', pdf_text,
-                                            re.IGNORECASE))
-                            if len(cnpj_match) >= 2:
-                                segundo_cnpj.append(cnpj_match[1])
-                        if not segundo_cnpj:
-                            segundo_cnpj.append(0)
-                        #print(segundo_cnpj)
+                            nfe = []
+                            nfe.extend(
+                                re.finditer(r'\d+No\.\s*(\d{6,9})|SÉRIE:\s*(\d{4,})|lado\s*(\d{3}\.\d{3}\.\d{3})|'
+                                            r'NF-e\s+Nº\s+(\d+\s+\d+\s+\d+)',
+                                            pdf_text, re.IGNORECASE))
+
+                            if not nfe:
+                                nfe.append(0)
+
                         cnpj_adm = '02003402007269'
                         notas_fiscais = sorted(list(set(notas_fiscais)))
 
-                        for nf, chaves, serie_match, data_match, cnpj in zip(notas_fiscais, chave_acesso_match,
-                                                                                  serie_matches, data_matches,
-                                                                                  segundo_cnpj):
-                            if nf == 0:
-                               """ #print('a')
-                                if chaves != 0:
-                                    chave = ''.join(chaves.split())
-                                    # print(chave)
-                                else:
-                                    chave = '0'
-                                if serie_match != 0:
-                                    serie = serie_match.group(3)
-                                else:
-                                    serie = 'NÃO ENCONTREI SERIE'
-                                if cnpj.group() != 0:
-                                    cnpj_segundo = cnpj.group(0)
-                                else:
-                                    cnpj_segundo = 'NÃO ENCONTREI CNPJ'
-                                #if nfe.group() != 0:
-                                #    nfe_formatado = nfe.group(1)
-                                #else:
-                                #    nfe_formatado = 'NÃO ENCONTREI NOTA COMP'
+                        for nf, serie_match, data_match, chave, nfe_comp in zip(notas_fiscais, serie_matches,
+                                                                                data_matches, chave_comp, nfe):
+                            if nf != 0:
+                                try:
+                                    for x in range(1, 10):
+                                        nf_ajust = nf.group(x)
+                                        if nf_ajust is not None:
+                                            break
+                                    nf_formatado = nf_ajust.replace(' ', '')
+                                except IndexError:
+                                    nf_formatado = 0
 
-                                data_emissao = 'NÃO ENCONTREI DATA'
-                                nf_formatado = nf
-                                #nfe_semponto = nfe_formatado.replace('.', '')
-                                #nfe_semzero = nfe_semponto if nfe_semponto[
-                                #                              0:4] != '0000' else nfe_semponto[4:]
-                                cn_tratada = re.sub(r'[./-]', '', cnpj_segundo)
-                                nf_pdf_map[message.subject] = {
-                                    'nota_fiscal': nf,
-                                    'data_email': message.received,
-                                    'chave_acesso': chave,
-                                    'email_vinculado': message.subject,
-                                    'serie_nf': serie,
-                                    'data_emissao': data_emissao,
-                                    'cnpj': cnpj_adm,
-                                    'nfe': '0',
-                                    'chave_comp': '0',
-                                    'transportadora' : 'ADM'
-                                }"""
-                               pass
-                            elif chaves == 0:
-                                nf_formatado = nf.group(1)
-                                #print(serie_match)
+                                try:
+                                    for x in range(1, 5):
+                                        data_ajust = data_match.group(x)
+                                        if data_ajust is not None:
+                                            break
+                                    data_emissao = data_ajust.replace('.', '/') if data_match else '0'
+                                except IndexError:
+                                    data_emissao = 0
+
+                                try:
+                                    for x in range(1, 6):
+                                        serie = serie_match.group(x)
+                                        if serie is not None:
+                                            break
+                                except IndexError:
+                                    serie = 0
+
+                                try:
+                                    for x in range(0, 2):
+                                        ch = chave.group(x)
+                                        if ch is not None:
+                                            break
+                                    ch_trat = ''.join(ch.split())
+                                    chave_trat = re.sub(r'[\D]', '', ch_trat)
+                                except IndexError:
+                                    chave_trat = 0
+
+                                try:
+                                    for x in range(1, 5):
+                                        comp_nota = nfe_comp.group(x)
+                                        if comp_nota is not None:
+                                            break
+                                    nota_comp = comp_nota.replace('.', '')
+                                except IndexError:
+                                    nota_comp = 0
+
                                 nf_pdf_map[nf_formatado] = {
                                     'nota_fiscal': nf_formatado,
                                     'data_email': message.received,
                                     'chave_acesso': '0',
                                     'email_vinculado': message.subject,
-                                    'serie_nf': serie_match,
-                                    'data_emissao': '0',
-                                    'cnpj': cnpj_adm,
-                                    'nfe': '0',
-                                    'chave_comp': '0',
-                                    'transportadora': 'ADM'
-                                }
-
-                            elif re.match(r'^\d{1,3}$', str(serie_match.group(2))):
-                                #print('c')
-                                chave = ''.join(chaves.split())
-                                serie = serie_match.group(2)
-                                nf_formatado = nf.group(1)
-                                cnpj_segundo = cnpj.group(0)
-                                cn_tratada = re.sub(r'[./-]', '', cnpj_segundo)
-                                #nfe_formatado = nfe.group(1)
-                                #nfe_semponto = nfe_formatado.replace('.', '')
-                                #nfe_semzero = nfe_semponto if nfe_semponto[
-                                #                              0:4] != '0000' else nfe_semponto[4:]
-                                data_pdf = data_match.group(2)
-                                data_emissao = data_pdf.replace('.', '/') if data_match else '0'
-
-                                nf_pdf_map[nf_formatado] = {
-                                    'nota_fiscal': nf_formatado,
-                                    'data_email': message.received,
-                                    'chave_acesso': chave if chave else None,
-                                    'email_vinculado': message.subject,
                                     'serie_nf': serie,
                                     'data_emissao': data_emissao,
                                     'cnpj': cnpj_adm,
-                                    'nfe': '0',
-                                    'chave_comp': '0',
-                                    'transportadora' : 'ADM'
+                                    'nfe': nota_comp,
+                                    'chave_comp': chave_trat,
+                                    'transportadora': 'ADM',
+                                    'peso_comp': '0',
+                                    'serie_comp': '0'
                                 }
-                            elif data_match != 0 and data_match.group(1) is not None:
-                                #print('d')
-                                # feito para tratar a royal
-                                chave = ''.join(chaves.split())
-                                serie = serie_match.group(3)
-                                nf_formatado = nf.group(1)
-                                cnpj_segundo = cnpj.group(0)
-                                cn_tratada = re.sub(r'[./-]', '', cnpj_segundo)
-                                #nfe_formatado = nfe.group(1)
-                                #nfe_semponto = nfe_formatado.replace('.', '')
-                                #nfe_semzero = nfe_semponto if nfe_semponto[0:4] != '0000' else nfe_semponto[4:]
-                                data_pdf = data_match.group(1)
-                                data_emissao = data_pdf.replace('.', '/') if data_match else '0'
-                                nf_pdf_map[nf_formatado] = {
-                                    'nota_fiscal': nf_formatado,
+                            if nf == 0:
+                                nf_pdf_map[attachment.name] = {
+                                    'nota_fiscal': '0',
                                     'data_email': message.received,
-                                    'chave_acesso': chave if chave else None,
+                                    'chave_acesso': 'SEM LEITURA',
                                     'email_vinculado': message.subject,
-                                    'serie_nf': serie,
-                                    'data_emissao': data_emissao,
-                                    'cnpj': cnpj_adm,
-                                    'nfe': '0',
-                                    'chave_comp': '0',
-                                    'transportadora': 'ADM'
-
+                                    'serie_nf': 'SEM LEITURA',
+                                    'data_emissao': 'SEM LEITURA',
+                                    'cnpj': 'SEM LEITURA',
+                                    'nfe': attachment.name,
+                                    'chave_comp': 'SEM LEITURA',
+                                    'transportadora': 'ADM',
+                                    'peso_comp': 'SEM LEITURA',
+                                    'serie_comp': 'SEM LEITURA'
                                 }
-                            else:
-                                #print('e')
-                                # feito para tratar a royal
-                                chave = ''.join(chaves.split())
-                                serie = serie_match.group(3)
-                                nf_formatado = nf.group(1)
-                                cnpj_segundo = cnpj.group(0)
-
-                                cn_tratada = re.sub(r'[./-]', '', cnpj_segundo)
-                                #nfe_formatado = nfe.group(1)
-                                #nfe_semponto = nfe_formatado.replace('.', '')
-                                #nfe_semzero = nfe_semponto if nfe_semponto[0:4] != '0000' else nfe_semponto[4:]
-                                data_pdf = data_match.group(3)
-                                if nf_formatado is None:
-                                    nf_formatado = nf.group(2).replace('.', '')  # tratamento para agricola gemelli
-                                data_emissao = data_pdf.replace('.', '/') if data_match else '0'
-                                nf_pdf_map[nf_formatado] = {
-                                    'nota_fiscal': nf_formatado,
-                                    'data_email': message.received,
-                                    'chave_acesso': chave if chave else None,
-                                    'email_vinculado': message.subject,
-                                    'serie_nf': serie,
-                                    'data_emissao': data_emissao,
-                                    'cnpj': cnpj_adm,
-                                    'nfe': '0',
-                                    'chave_comp': '0',
-                                    'transportadora': 'ADM'
-                                }
-                        # print("iniciando remoção")
-                    os.remove(temp_pdf.name)
-
-
+                        os.remove(temp_pdf.name)

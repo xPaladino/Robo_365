@@ -135,7 +135,9 @@ def process_olam(message, salve_folder, nf_excel_map):
                                                              'cnpj': cnpj_olam,
                                                              'chave_comp': chavecomp,
                                                              'data_emissao': '0',
-                                                             'transportadora': 'OLAM'
+                                                             'transportadora': 'OLAM',
+                                                             'serie_comp': '0',
+                                                             'peso_comp': '0'
                                                              })
                                 elif "COMPLEMENTOS" in sheet_names:
                                     df = pd.read_excel(temp_xlsx.name, engine='openpyxl', header=1,
@@ -163,11 +165,25 @@ def process_olam(message, salve_folder, nf_excel_map):
                                             'cnpj': cnpj_olam,  # cnpj,
                                             'data_emissao': '0',
                                             'peso_nfe': pesos,
-                                            'transportadora': 'OLAM'
+                                            'transportadora': 'OLAM',
+                                            'serie_comp': '0',
+                                            'peso_comp': '0'
 
                                         })
                                 else:
-                                    print("Não encontrei correspondências")
+                                    nf_excel_map.append({'nota_fiscal': '0',
+                                                         'data_email': message.received,
+                                                         'chave_acesso': 'SEM LEITURA',
+                                                         'email_vinculado': message.subject,
+                                                         'serie_nf': 'SEM LEITURA',
+                                                         'data_emissao': 'SEM LEITURA',
+                                                         'nfe': attachment.name,
+                                                         'cnpj': 'SEM LEITURA',
+                                                         'chave_comp': 'SEM LEITURA',
+                                                         'peso_nfe': '0',
+                                                         'serie_comp': 'SEM LEITURA',
+                                                         'peso_comp': 'SEM LEITURA',
+                                                         'transportadora': 'OLAM'})
 
                         except Exception as e:
                             print(f"Erro ao ler arquivo {e}")
@@ -217,5 +233,8 @@ def process_olam(message, salve_folder, nf_excel_map):
                                                              'cnpj': cn_tratada,
                                                              'chave_comp': chaves,
                                                              'peso_nfe': peso_nfe,
-                                                             'transportadora': 'OLAM'})
+                                                             'transportadora': 'OLAM',
+                                                             'serie_comp': '0',
+                                                             'peso_comp': '0'
+                                                             })
                         os.remove(temp_xlsx.name)

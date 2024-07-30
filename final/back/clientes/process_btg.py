@@ -2,7 +2,7 @@ import os, re, base64, tempfile, zipfile
 from PyPDF2 import PdfReader
 
 def process_btg(message, save_folder, nf_zip_map):
-    print(f"{message.received} - {message.subject}")
+
     if re.search(r'@btgpactual\.com', message.body):
         print("TEM BTG")
         if message.attachments:
@@ -36,6 +36,22 @@ def process_btg(message, save_folder, nf_zip_map):
                                         )
                                         if not notas_fiscais:
                                             notas_fiscais.append(0)
+                                        for match in notas_fiscais:
+                                            if match == 0:
+                                                nf_zip_map[attachment.name] = {
+                                                    'nota_fiscal': '0',
+                                                    'data_email': message.received,
+                                                    'chave_acesso': 'SEM LEITURA',
+                                                    'email_vinculado': message.subject,
+                                                    'serie_nf': 'SEM LEITURA',
+                                                    'data_emissao': 'SEM LEITURA',
+                                                    'cnpj': 'SEM LEITURA',
+                                                    'nfe': attachment.name,
+                                                    'chave_comp': 'SEM LEITURA',
+                                                    'transportadora': 'BTG',
+                                                    'peso_comp': 'SEM LEITURA',
+                                                    'serie_comp': 'SEM LEITURA'
+                                                }
 
                                         chave_acesso = re.findall(
                                             r'(?<!NFe Ref\.:\()\b\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\b',
@@ -68,8 +84,8 @@ def process_btg(message, save_folder, nf_zip_map):
                                                 nota_sem_hifen_str = ', '.join(nota_sem_hifen)
                                                 serie = re.findall(r'-(\d+)\b', valor)
                                                 serie_str = ', '.join(serie)
-
-                                                nf_zip_map[valor] = {
+                                                print(f'{valor}\n{nota_sem_hifen_str}')
+                                                nf_zip_map[nota_sem_hifen_str] = {
                                                     'nota_fiscal': nota_sem_hifen_str,
                                                     'data_email': message.received,
                                                     'email_vinculado': message.subject,
@@ -79,5 +95,7 @@ def process_btg(message, save_folder, nf_zip_map):
                                                     'chave_acesso': '',
                                                     'nfe': nfe_comp,
                                                     'serie_nf': serie_str,
-                                                    'transportadora': 'BTG'
+                                                    'transportadora': 'BTG',
+                                                    'serie_comp': '0',
+                                                    'peso_comp': '0'
                                                 }

@@ -7,9 +7,9 @@ import threading
 from final.back import processamento
 from datetime import datetime
 from final.back.SQL.mapa_estoque import start_mapa
+import random
 
 import time
-
 
 
 def browse_folder(entry):
@@ -18,7 +18,7 @@ def browse_folder(entry):
         entry.delete(0, tk.END)
         entry.insert(tk.END, folder_selected)
     else:
-        messagebox.showwarning("Atenção", "Nenhum diretório selecionado")
+        messagebox.showwarning("Atenção", "Por favor, escolha um diretório para continuar.")
 
 
 def start_processing(folder_entry, date_entry, date_entry_end):
@@ -29,11 +29,11 @@ def start_processing(folder_entry, date_entry, date_entry_end):
     escolha_fim = None
 
     if not search_date or not search_date_end:
-        messagebox.showwarning("Atenção", "Escolha uma data antes de iniciar")
+        messagebox.showwarning("Atenção", "Por favor, escolha um período para continuar.")
         return
 
     if search_date:
-        ajusta = datetime.strptime(search_date,"%d/%m/%Y")
+        ajusta = datetime.strptime(search_date, "%d/%m/%Y")
         formata = ajusta.strftime("%Y-%m-%d")
         escolha_inicio = formata
     search_date = escolha_inicio
@@ -46,6 +46,7 @@ def start_processing(folder_entry, date_entry, date_entry_end):
 
     if folder_path:
         processing_window = tk.Toplevel()
+        processing_window.geometry("300x300")
         processing_window.iconbitmap('sonic-icon.ico')
         processing_window.title("AGUARDE")
         processing_window.grab_set()
@@ -53,23 +54,45 @@ def start_processing(folder_entry, date_entry, date_entry_end):
         gif_label = tk.Label(processing_window)
         gif_label.pack(padx=30, pady=30)
 
-        processing_label = tk.Label(processing_window, text="Processando... Por favor, aguarde.")
+        messages = [
+            "Aguarde um pouco, pegue um café.\n Ou dois.",
+            "Estamos quase lá, mais um instante por favor.\n Ou dois. Ou três.",
+            "Só um momento, estamos trabalhando nisso.\n Literalmente.",
+            "Aguarde, estamos processando seus dados.\n É verdade!",
+            "Estamos a todo vapor! Mais alguns segundos.\n Prometemos.",
+            "Obrigado pela paciência,\n só mais um pouquinho.",
+            "Quase pronto, estamos finalizando.\n Não, sério!",
+            "Um segundo, por favor.\n O hamster está correndo na roda.",
+            "Aguarde um pouco.\n A NASA também teve que esperar.",
+            "Um momento.\n Prometo.",
+            "Estamos no caminho certo.\n Só perdemos o mapa.",
+            "Relaxe, e se isso não ajudar,\n um café pode ajudar!",
+            "Estamos trabalhando duro.\n Ou fingindo muito bem.",
+            "Isso pode demorar um pouco.\n Afinal, boa arte leva tempo.",
+            "Quase lá. Por favor,\n mantenha as mãos e pés dentro do veículo.",
+            "Seu arquivo está quase pronto.\n É uma promessa de programador!",
+            "Enquanto aguarda, que tal um café?\n Pegue um pra mim também!"
+        ]
+
+        processing_label = tk.Label(processing_window, text=random.choice(messages))
         processing_label.pack(padx=20, pady=20)
         time_label = tk.Label(processing_window, text="Tempo decorrido: 0.00")
         time_label.pack()
         processing_thread = threading.Thread(target=process_and_show_message,
                                              args=(
                                                  folder_path, search_date, search_date_end, processing_window,
-                                                 gif_label,time_label))
+                                                 processing_label, gif_label, time_label, messages))
         processing_thread.start()
     else:
-        messagebox.showerror("Erro", "Nenhum diretório selecionado")
+        messagebox.showwarning("Atenção", "Por favor, escolha um diretório antes de continuar.")
 
 
-def process_and_show_message(folder_path, selected_date, selected_date_end, processing_window, gif_label, time_label):
+def process_and_show_message(folder_path, selected_date, selected_date_end, processing_window, processing_label,
+                             gif_label, time_label, messages):
+
     # Carregar e exibir o GIF animado
     tempo_inicial = time.time()
-    success = False
+    success = [False]
     gif = Image.open("sonicgif2.gif")
 
     gif_frames = [ImageTk.PhotoImage(frame) for frame in ImageSequence.Iterator(gif)]
@@ -79,27 +102,55 @@ def process_and_show_message(folder_path, selected_date, selected_date_end, proc
             gif_label.config(image=gif_frames[frame_num])
             processing_window.after(100, update_gif_frame, (frame_num + 1) % len(gif_frames))
 
-    update_gif_frame(0)  # Iniciar a exibição do GIF animado
+    update_gif_frame(0)
 
     def update_timer():
-        if processing_window.winfo_exists():
+        if processing_window.winfo_exists() and not success[0]:
             tempo = time.time() - tempo_inicial
             min = int(tempo) // 60
             seg = int(tempo) % 60
             time_label.config(text=f"Tempo decorrido: {min:02}:{seg:02}")
-            if not success:
-                processing_window.after(1000,update_timer)
+
+            processing_window.after(1000, update_timer)
 
     update_timer()
-    success = processamento.main(folder_path, selected_date, selected_date_end)
 
-    if success:
-        messagebox.showinfo("Concluído", "Processamento concluído com sucesso!")
+    def update_mensagem():
+        if processing_window.winfo_exists() and not success[0]:
+            processing_label.config(text=random.choice(messages))
+            processing_window.after(6000, update_mensagem)
 
-    else:
-        messagebox.showerror("Erro", "Ocorreu um erro durante o processamento!")
+    update_mensagem()
 
-    processing_window.destroy()
+    mensagens = []
+
+    try:
+        nf_pdf_count, resultados_pdf_count, nf_zip_count, resultados_zip_count, nf_excel_count, resultados_excel_count \
+            = processamento.main(folder_path, selected_date, selected_date_end)
+
+        if nf_pdf_count != 0:
+            mensagens.append(f"PDF's lidos: {nf_pdf_count} - Processados: {resultados_pdf_count}")
+
+        if nf_zip_count != 0:
+            mensagens.append(f"ZIP's lidos: {nf_zip_count} - Processados: {resultados_zip_count}")
+
+        if nf_excel_count != 0:
+            mensagens.append(f"Excel's lidos: {nf_excel_count} - Processados: {resultados_excel_count}")
+
+        if mensagens:
+            success[0] = True
+            messagebox.showinfo("Concluído", "Processamento concluído com sucesso!\n" + "\n".join(mensagens))
+
+        else:
+            success[0] = True
+            messagebox.showwarning("Atenção", f"Não encontrei dados entre {selected_date} e {selected_date_end}.\n"
+                                              f"Por favor, verifique o periodo e tente novamente.")
+
+        processing_window.destroy()
+    except ValueError as e:
+        success[0] = True
+        messagebox.showwarning("Atenção", "Arquivo excel em aberto.\nPor favor, feche e tente novamente.")
+        processing_window.destroy()
 
 
 def browse_folder_sql(entry):
@@ -108,7 +159,7 @@ def browse_folder_sql(entry):
         entry.delete(0, tk.END)
         entry.insert(tk.END, folder_selected)
     else:
-        messagebox.showwarning("Atenção", "Nenhum diretório selecionado")
+        messagebox.showwarning("Atenção", "Por favor, escolha um diretório para continuar.")
 
 
 def get_date_selected_sql(cal, cal_window, date_entry):
@@ -121,48 +172,8 @@ def get_date_selected_sql(cal, cal_window, date_entry):
         date_entry.insert(tk.END, formatted_date)
         cal_window.destroy()
     else:
-        messagebox.showwarning("Atenção", "Nenhuma data selecionada")
+        messagebox.showwarning("Atenção", "Por favor, escolha um período para continuar.")
 
-
-"""def process_and_show_message_teste(folder_path, selected_date, processing_window, gif_label,time_label):
-    gif = Image.open("sonicgif2.gif")
-    start_time = time.time()
-    gif_frames = [ImageTk.PhotoImage(frame) for frame in ImageSequence.Iterator(gif)]
-
-    def update_timer():
-        while processing_window.winfo_exists():
-            elapsed_time = time.time() - start_time
-            time_label.config(text=f"Tempo decorrido: {elapsed_time:.2f}")
-            time.sleep(1)
-
-    timer_thread = threading.Thread(target=update_timer)
-    timer_thread.start()
-
-    def update_gif_frame(frame_num):
-        if processing_window.winfo_exists():
-            gif_label.config(image=gif_frames[frame_num])
-            processing_window.after(100, update_gif_frame, (frame_num + 1) % len(gif_frames))
-
-    update_gif_frame(0)  # Iniciar a exibição do GIF animado
-
-    # Chamar a função principal de processamento
-    #success = start_mapa(folder_path, selected_date)
-    end_time = time.time()
-    timer_thread.join()
-    total_time = end_time - start_time
-    minutos = int(total_time) // 60
-    segundos = int(total_time) % 60
-    # Exibir mensagem de conclusão do processamento
-    if success:
-        # messagebox.showinfo("Concluído", "Processamento concluído com sucesso!")
-        messagebox.showinfo("Concluído", f" Concluído em {minutos}:{segundos} - Dados salvos em: {folder_path}")
-
-    else:
-        messagebox.showerror("Erro", "Ocorreu um erro durante o processamento!")
-
-    # Fechar a janela de processamento
-    processing_window.destroy()
-"""
 
 def open_calendar_sql(sql_date_entry):
     cal_window = tk.Toplevel()
@@ -182,36 +193,6 @@ def open_calendar_sql(sql_date_entry):
     cal_window.wait_window()
 
 
-"""def start_sql_query(folder_entry_sql, date_entry_sql):
-    folder_path = folder_entry_sql.get()
-    search_date = date_entry_sql.get()
-    if not search_date:
-        messagebox.showwarning("Atenção", "Escolha uma data antes de iniciar")
-        return
-    if not search_date:
-        messagebox.showwarning("Atenção", "Escolha uma data antes de iniciar")
-        return
-
-    if folder_path:
-        processing_window = tk.Toplevel()
-        processing_window.iconbitmap('sonic-icon.ico')
-        processing_window.title("AGUARDE")
-        processing_window.grab_set()
-        processing_window.protocol("WM_DELETE_WINDOW", lambda: None)
-        gif_label = tk.Label(processing_window)
-        gif_label.pack(padx=30, pady=30)
-        processing_label = tk.Label(processing_window, text="Processando... Por favor, aguarde.")
-        processing_label.pack(padx=20, pady=20)
-
-        processing_thread = threading.Thread(target=process_and_show_message_teste,
-                                             args=(
-                                                 folder_path, search_date, processing_window,
-                                                 gif_label))
-        processing_thread.start()
-    else:
-        messagebox.showerror("Erro", "Nenhum diretório selecionado")
-"""
-
 ## Mapa de Estoque
 
 
@@ -222,6 +203,7 @@ def browse_folder_mapa(entry):
         entry.insert(tk.END, folder_selected)
     else:
         messagebox.showwarning("Atenção", "Nenhum diretório selecionado")
+
 
 def get_date_selected_mapa(cal, cal_window, date_entry):
     selected_date_str = cal.get_date()
@@ -236,7 +218,8 @@ def get_date_selected_mapa(cal, cal_window, date_entry):
         messagebox.showwarning("Atenção", "Nenhuma data selecionada")
 
 
-def process_and_show_message_mapa(folder_path, selected_date, selected_date_end, processing_window, gif_label,time_label):
+def process_and_show_message_mapa(folder_path, selected_date, selected_date_end, processing_window, gif_label,
+                                  time_label):
     tempo_inicial = time.time()
     success = False
     gif = Image.open("sonicgif2.gif")
@@ -260,8 +243,8 @@ def process_and_show_message_mapa(folder_path, selected_date, selected_date_end,
 
     update_timer()
     # Chamar a função principal de processamento
-    success = start_mapa(folder_path, selected_date,selected_date_end)
-    print(start_mapa(folder_path, selected_date,selected_date_end))
+    success = start_mapa(folder_path, selected_date, selected_date_end)
+    print(start_mapa(folder_path, selected_date, selected_date_end))
     # Exibir mensagem de conclusão do processamento
 
     if success:
@@ -273,6 +256,7 @@ def process_and_show_message_mapa(folder_path, selected_date, selected_date_end,
 
     processing_window.destroy()
     # Fechar a janela de processamento
+
 
 def start_mapa_query(folder_entry_mapa, mapa_date_entry, mapa_date_entry_end):
     folder_path = folder_entry_mapa.get()
@@ -303,7 +287,7 @@ def start_mapa_query(folder_entry_mapa, mapa_date_entry, mapa_date_entry_end):
         processing_thread = threading.Thread(target=process_and_show_message_mapa,
                                              args=(
                                                  folder_path, search_date, search_date_end, processing_window,
-                                                 gif_label,time_label))
+                                                 gif_label, time_label))
         processing_thread.start()
     else:
         messagebox.showerror("Erro", "Nenhum diretório selecionado")
@@ -321,9 +305,9 @@ def main():
     frame_email = tk.Frame(notebook)
     notebook.add(frame_email, text='Processamento de E-mails')
 
-    def handle_keypress(event,entry_widget):
-        #responsavel por alterar o campo para dia/mes/ano hora/minuto/segundo
-        if event.char.isdigit() or event.keysym == 'BackSpace' or event.keysym == 'Tab': #or event.char in ["/", ":", " "]:
+    def handle_keypress(event, entry_widget):
+        # responsavel por alterar o campo para dia/mes/ano hora/minuto/segundo
+        if event.char.isdigit() or event.keysym == 'BackSpace' or event.keysym == 'Tab':  # or event.char in ["/", ":", " "]:
             resultado = entry_widget.get()
             if len(resultado) == 2 and event.char.isdigit():
                 entry_widget.insert(tk.END, '/')
@@ -354,9 +338,9 @@ def main():
         return "break"
 
     def handle_nokeypress(event):
-        #responsavel por não permitir digitação
+        # responsavel por não permitir digitação
         if event.keysym == 'BackSpace' or event.keysym == 'Tab':
-            #resultado = entry_widget.get()
+            # resultado = entry_widget.get()
             return True
         return "break"
 
@@ -385,7 +369,7 @@ def main():
     folder_entry.grid(row=2, column=1, padx=5, pady=5)
 
     folder_entry.config(validate="key")
-    folder_entry.bind("<Key>",lambda event: handle_nokeypress(event))
+    folder_entry.bind("<Key>", lambda event: handle_nokeypress(event))
 
     browse_button = tk.Button(frame_email, text="Procurar", command=lambda: browse_folder(folder_entry))
     browse_button.grid(row=2, column=2, padx=5, pady=5)
@@ -393,33 +377,6 @@ def main():
     start_button = tk.Button(frame_email, text="Começar o processamento",
                              command=lambda: start_processing(folder_entry, date_entry, date_entry_end))
     start_button.grid(row=3, columnspan=3, padx=5, pady=5)
-
-    """# Aba para consulta SQL
-    frame_sql = tk.Frame(notebook)
-    notebook.add(frame_sql, text='Consulta SQL')
-
-    sql_date_label = tk.Label(frame_sql, text="Data para consulta:")
-    sql_date_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
-
-    sql_date_entry = tk.Entry(frame_sql, width=20)
-    sql_date_entry.grid(row=0, column=1, padx=5, pady=5, sticky="w")
-
-    select_date_button_sql = tk.Button(frame_sql, text="Selecionar Data",
-                                       command=lambda: open_calendar_sql(sql_date_entry))
-    select_date_button_sql.grid(row=0, column=2, padx=5, pady=5)
-
-    folder_label = tk.Label(frame_sql, text="Escolha o diretório:")
-    folder_label.grid(row=1, column=0, padx=5, pady=5)
-
-    folder_entry_sql = tk.Entry(frame_sql, width=50)
-    folder_entry_sql.grid(row=1, column=1, padx=5, pady=5)
-
-    browse_button = tk.Button(frame_sql, text="Procurar", command=lambda: browse_folder_sql(folder_entry_sql))
-    browse_button.grid(row=1, column=2, padx=5, pady=5)"""
-
-    """sql_start_button = tk.Button(frame_sql, text="Executar Consulta SQL",
-                                 command=lambda: start_sql_query(folder_entry_sql, sql_date_entry))
-    sql_start_button.grid(row=2, columnspan=3, padx=5, pady=5)"""
 
     # MAPA DE ESTOQUE
     frame_mapa = tk.Frame(notebook)

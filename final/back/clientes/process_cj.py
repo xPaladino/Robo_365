@@ -98,7 +98,6 @@ def process_cj(message, save_folder, nf_pdf_map, nf_excel_map):
                             df2 = pd.read_excel(temp_xlsx.name, engine='openpyxl', header=0)
                             df2.columns = df2.columns.str.strip()
                             cnpj_cj = '21294708000334'
-                            #print(df2.columns)
                             if 'Unnamed: 0' in df2.columns:
                                 pass
                                 if 'NF sobra' in df.columns:
@@ -114,7 +113,7 @@ def process_cj(message, save_folder, nf_pdf_map, nf_excel_map):
                                     replica_chave, replica_nfe, replica_serie, pdf_ajeita = [], [], [], []
                                     ajeita = sorted(pdf_nfe)
                                     ajeita_nfe = sorted(nf_ref_cleaned)
-                                    #print(df.columns)
+                                    # print(df.columns)
                                     for i in ajeita:
                                         pdf_ajeita.append(i)
 
@@ -145,7 +144,10 @@ def process_cj(message, save_folder, nf_pdf_map, nf_excel_map):
                                                              'cnpj': cnpj_cj,
                                                              'peso_nfe': peso_nfe,
                                                              'email_vinculado': message.subject,
-                                                             'transportadora': 'CJ'})
+                                                             'transportadora': 'CJ',
+                                                             'serie_comp': '0',
+                                                             'peso_comp': '0'
+                                                             })
 
                             else:
                                 if 'COMPLEMENTO' in df2.columns and 'NOTA' in df2.columns:
@@ -198,16 +200,18 @@ def process_cj(message, save_folder, nf_pdf_map, nf_excel_map):
                                                              'cnpj': cnpj_cj,
                                                              'peso_nfe': peso_nfe,
                                                              'email_vinculado': message.subject,
-                                                             'transportadora': 'CJ'})
+                                                             'transportadora': 'CJ',
+                                                             'serie_comp': '0',
+                                                             'peso_comp': '0'
+                                                             })
                         os.remove(temp_xlsx.name)
             else:
-
-                print(excel)
                 for attachment in message.attachments:
                     file_extension = os.path.splitext(attachment.name)[1].lower()
                     if file_extension == ".pdf":
                         print("CAMINHO PDF")
                         decoded_content = base64.b64decode(attachment.content)
+
                         with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_pdf:
                             temp_pdf.write(decoded_content)
                             pdf_reader = extract_text(temp_pdf.name)
@@ -220,28 +224,32 @@ def process_cj(message, save_folder, nf_pdf_map, nf_excel_map):
                             notas_fiscais, segundo_cnpj, cnpj_match, nfe_match, data_matches, serie_matches, replica_nota = [], [], [], [], [], [], []
                             replica_cnpj = []
                             cnpj_cj = '21294708000334'
-
+                            # print(chave_acesso)
                             notas_fiscais.extend(
                                 re.finditer(r'(?:número:|REF\s+A\s+NOTA'
                                             r'|NF\s+Nº:|ORIGEM\s+NR.:|referente\s+NF'
-                                            r'|referente\s+a\s+NF|'
-                                            r'NF:)'
+                                            r'|referente\s+a\s+NF|a\s+NFE|'
+                                            r'COMPLEMENTO\s+DA\s+NF|'
+                                            r'NF:|REFERENTE\s+NFO)'
                                             r'\s*(?:\d+\s*,\s*)?(\d{4,})|'
                                             r'nota\s+complementar\s+ref\s+a\s+nfe\s*(?:\d+\s*,\s*)?(\d{4,})'
                                             r'|nota\s+complementar\s+ref.\s+NF\s+n\s*(?:\d+\s*,\s*)?(\d{4,})|'
-                                            r'\b(\d+)\s+(?:de\s+\d{2}/\d{2}/\d{4})|'
+                                            # r'\b(\d+)\s+(?:de\s+\d{2}/\d{2}/\d{4})|'
                                             r'NF\(\s*s\)\s*\(([\d,\s*]+)\)|'
-                                            r'NFES\s+((?:\d+\s*,\s*)*\d+\s*E\s*\d+)',
+                                            r'NFES\s+((?:\d+\s*,\s*)*\d+\s*E\s*\d+)|'
+                                            r'FISCAIS\s+No\s+\d+(?:/\d+)?\s+E\s+\d+|'
+                                            r'NOTAS\s+REFERENCIA:\s+\d+(?:/\d+)?\s+E\s+\d+|'
+                                            r'FISCAIS\s+No\s*((?:\d+(?:,\s*)?)+)|'
+                                            r'NOTAS\s+REFERENCIA:\s+((?:\d+(?:,\s*)?)+(?:\s+E\s+\d+)?)',
+                                            # r'FISCAIS\s+No\s+\d+(?:/\d+)?\s+E\s+\d+',
+                                            # r'Numero\s+Contrato:(\s+\d+)',
+
                                             # r'NFs\s+de\s+(\d+/\d+/\d+)\s+\((.*?)\)',
 
                                             pdf_reader,
                                             re.IGNORECASE))
                             if not notas_fiscais:
                                 notas_fiscais.append(0)
-
-                            for i in notas_fiscais:
-                                if (len(notas_fiscais)) > 1:
-                                    nota = i.group(4)
 
                             cnpj_match.extend(
                                 re.finditer(r'(\d{2}.\d{3}.\d{3}/\d{4}-\d{2})', pdf_reader,
@@ -251,7 +259,10 @@ def process_cj(message, save_folder, nf_pdf_map, nf_excel_map):
                             if not segundo_cnpj:
                                 segundo_cnpj.append(0)
                             nfe_match.extend(
-                                re.finditer(r'(?:NF-e\s*No.|NF-e\s+Nº|NFe)\s+(\d+(?:\.\d+)*)',
+                                re.finditer(r'(?:NF-e\s*No.|NF-e\s+Nº'
+                                            r'|RECEBEDOR\s*NFe)'
+                                            # r'|NFe)'
+                                            r'\s+(\d+(?:\.\d+)*)',
                                             pdf_reader, re.IGNORECASE))
                             if not nfe_match:
                                 nfe_match.append(0)
@@ -264,6 +275,24 @@ def process_cj(message, save_folder, nf_pdf_map, nf_excel_map):
                             if not data_matches:
                                 data_matches.append(0)
 
+                            for match in notas_fiscais:
+                                if match == 0:
+                                    nf_pdf_map[attachment.name] = {
+                                        'nota_fiscal': '0',
+                                        'data_email': message.received,
+                                        'chave_acesso': 'SEM LEITURA',
+                                        'email_vinculado': message.subject,
+                                        'serie_nf': 'SEM LEITURA',
+                                        'data_emissao': 'SEM LEITURA',
+                                        'cnpj': 'SEM LEITURA',
+                                        'nfe': attachment.name,
+                                        'chave_comp': 'SEM LEITURA',
+                                        'transportadora': 'CJ',
+                                        'peso_comp': 'SEM LEITURA',
+                                        'serie_comp': 'SEM LEITURA'
+                                    }
+                                    print('zerado')
+
                             serie_matches.extend(
                                 re.finditer(
                                     r'(?:VALOR:\s+)(\d{9}\s+(\d+))|Série\s+(\d{1,})|FOLHA\s+(\d{1,})',
@@ -271,14 +300,6 @@ def process_cj(message, save_folder, nf_pdf_map, nf_excel_map):
                             if not serie_matches:
                                 serie_matches.append(0)
 
-                            for notas in notas_fiscais:
-                                if notas != 0:
-                                    nota = None
-                                    for x in range(0,15):
-                                        nota = notas.group(x)
-                                        if nota is not None:
-                                            break
-                                    #print(nota)
                             for nf, chave in zip(notas_fiscais, chave_acesso):
                                 nota = []
                                 for i in notas_fiscais:
@@ -289,183 +310,63 @@ def process_cj(message, save_folder, nf_pdf_map, nf_excel_map):
                                                 notas = i.group(x)
                                                 if notas is not None:
                                                     break
-                                            #nota_trata = re.sub(r'[\D]', '', notas)
+                                            # nota_trata = re.sub(r'[\D]', '', notas)
                                             nota.append(notas)
-                                            for i in nota:
-                                                nota_split = re.split(r',',i)
-                                                for x in nota_split:
-                                                    print(x)
 
                                 for i in nota:
-                                    procura = re.findall(r'\d+',i)
+                                    procura = re.findall(r'\d+', i)
                                     filtra = [num for num in procura if len(num) > 1]
 
                                     replica_nota.append(filtra)
                                     replica_cnpj.append(cnpj_cj)
 
-                            #for nota,cnpj,chave,serie,nfe in zip(replica_nota,replica_cnpj,chave_acesso,serie_matches,nfe_match):
-                            for nota,cnpj,serie in zip(replica_nota,replica_cnpj,serie_matches):
-                                """chaves = ''.join(chave.split())
+                            for nota, cnpj, serie, dta, chave, nfe in zip(replica_nota, replica_cnpj, serie_matches,
+                                                                          data_matches, chave_acesso, nfe_match):
+                                try:
+                                    chaves = ''.join(chave.split())
+                                except IndexError:
+                                    chaves = 0
 
-                                
-                                for i in range(0,2):
-                                    nfe_comp = nfe.group(i)
-                                    if nfe_comp is not None:
-                                        break
+                                try:
+                                    for i in range(1, 4):
+                                        nfe_comp = nfe.group(i)
+                                        if nfe_comp is not None:
+                                            break
 
-                                nfe_split = re.sub(r'[\D]','',nfe_comp)
-                                """
-                                for i in range(0,3):
-                                    series = serie.group(i)
-                                    if series is not None:
-                                        break
-                                serie_split = re.sub(r'[\D]','',series)
+                                    nfe_split = re.sub(r'[\D]', '', nfe_comp)
+                                except IndexError:
+                                    nfe_split = 0
+
+                                try:
+                                    for x in range(1, 4):
+                                        data_emissao = dta.group(x)
+                                        if data_emissao is not None:
+                                            break
+                                except IndexError:
+                                    data_emissao = 0
+
+                                try:
+                                    for i in range(0, 3):
+                                        series = serie.group(i)
+                                        if series is not None:
+                                            break
+                                    serie_split = re.sub(r'[\D]', '', series)
+                                except IndexError:
+                                    serie_split = 0
+
                                 for match in nota:
-                                    print(match)
                                     nf_pdf_map[match] = {
-                                                'nota_fiscal': match,
-                                                'data_email': message.received,
-                                                'chave_acesso': '0',
-                                                'email_vinculado': message.subject,
-                                                'serie_nf': serie_split,
-                                                'data_emissao': '0',
-                                                'cnpj': cnpj,
-                                                'nfe': '0',
-                                                'chave_comp': '0',
-                                                'transportadora': 'CJ'
-                                    }
-
-                            """for chave, cnpj, nfe_comp, emissao, serie, nota in zip(
-                                    chave_acesso,
-                                    cnpj_match,
-                                    nfe_match,
-                                    data_matches,
-                                    serie_matches,
-                                    notas_fiscais):
-                                chaves = ''.join(chave.split())
-                                cn = cnpj.group(1)
-                                cn_tratada = re.sub(r'[./-]', '',
-                                                    cn)  # remoção de ponto, barra e traço
-                                cn_cj = '21294708000334'
-                                nfe = nfe_comp.group(1)
-                                nfe_ponto = re.sub(r'[.]', '', nfe)  # remoção do ponto
-                                nfe_tratada = nfe_ponto if nfe_ponto[
-                                                           0:4] != '0000' else nfe_ponto[4:]
-                                dta_emissao = emissao.group(3)
-                                #print(notas_fiscais)
-                                for i in range(0, 3):
-                                    series = serie.group(i)
-                                    if series is not None:
-                                        break
-                                #print(series)
-                                #print(nfe_match)
-                                series = serie.group(3)
-                                if series == None:
-                                    series = serie.group(2)
-                                if series == None:
-                                    series = serie.group(1)
-                                if series == None:
-                                    series = serie.group(4)
-                                if nota == 0:
-                                    print("nota nao encontrada")
-                                    nf_pdf_map[message.subject] = {
-                                        'nota_fiscal': '0',
+                                        'nota_fiscal': match,
                                         'data_email': message.received,
                                         'chave_acesso': '0',
                                         'email_vinculado': message.subject,
-                                        'serie_nf': series,
-                                        'data_emissao': dta_emissao,
-                                        'cnpj': cn_cj,
-                                        'nfe': nfe_tratada,
+                                        'serie_nf': serie_split,
+                                        'data_emissao': data_emissao,
+                                        'cnpj': cnpj,
+                                        'nfe': nfe_split,
                                         'chave_comp': chaves,
-                                        'transportadora': 'CJ'
+                                        'transportadora': 'CJ',
+                                        'peso_comp': '0',
+                                        'serie_comp': '0'
                                     }
-                                else:
-                                    notas = nota.group(2)
-
-                                    if notas == None:
-                                        notas = nota.group(3)
-                                    if notas == None:
-                                        notas = nota.group(2)
-                                    if notas == None:
-                                        notas = nota.group(1)
-                                    if notas == None:
-                                        print('não há nota')
-                                    else:
-                                        nf_pdf_map[notas] = {
-                                            'nota_fiscal': notas,
-                                            'data_email': message.received,  # data_email,
-                                            'chave_acesso': chaves,
-                                            'email_vinculado': message.subject,
-                                            'serie_nf': series,
-                                            'data_emissao': dta_emissao,
-                                            'cnpj': cn_cj,
-                                            'nfe': nfe_tratada,
-                                            'chave_comp': '0',
-                                            'transportadora': 'CJ'
-                                        }
-                                    if notas == None:
-                                        notas = nota.group(4)
-                                        for i in notas_fiscais:
-                                            if (len(notas_fiscais)) > 1:
-                                                nota = i.group(4)
-                                                # notaseparada = re.split(r'de', nota)
-                                                nfe_ajust = nfe_tratada if nfe_tratada[
-                                                                           0:3] != '000' else nfe_tratada[
-                                                                                              3:]
-                                                nf_pdf_map[nota] = {
-                                                    'nota_fiscal': nota,
-                                                    'data_email': message.received,  # data_email,
-                                                    'chave_acesso': chaves,
-                                                    'email_vinculado': message.subject,
-                                                    'serie_nf': series,
-                                                    'data_emissao': dta_emissao,
-                                                    'cnpj': cn_cj,
-                                                    'nfe': nfe_ajust,
-                                                    'chave_comp': '0',
-                                                    'transportadora': 'CJ'
-                                                }
-
-                                    if notas is None:
-                                        #print(notas)
-                                        notas = nota.group(5)
-                                        if notas is not None:
-
-                                            notaseparada = re.split(r',', notas)
-                                            #print(notaseparada)
-                                            if dta_emissao == None:
-                                                dta_emissao = emissao.group(2)
-                                            for notaajustada in notaseparada:
-                                                chave_ajustada = ''.join(notaajustada.split())
-                                                nf_pdf_map[chave_ajustada] = {
-                                                    'nota_fiscal': chave_ajustada,
-                                                    'data_email': message.received,  # data_email,
-                                                    'chave_acesso': chaves,
-                                                    'email_vinculado': message.subject,
-                                                    'serie_nf': series,
-                                                    'data_emissao': dta_emissao,
-                                                    'cnpj': cn_cj,
-                                                    'nfe': nfe_tratada,
-                                                    'chave_comp': '0',
-                                                    'transportadora': 'CJ'
-                                                }
-                                    if notas == None:
-                                        notas = nota.group(6)
-                                        notaseparada = re.split(r'\s*,\s*|\s+E\s+', notas)
-
-                                        for ajuste in notaseparada:
-                                            chave_ajustada = ''.join(ajuste.split())
-                                            nf_pdf_map[chave_ajustada] = {
-                                                'nota_fiscal': chave_ajustada,
-                                                'data_email': message.received,  # data_email,
-                                                'chave_acesso': chaves,
-                                                'email_vinculado': message.subject,
-                                                'serie_nf': series,
-                                                'data_emissao': dta_emissao,
-                                                'cnpj': cn_cj,
-                                                'nfe': nfe_tratada,
-                                                'chave_comp': '0',
-                                                'transportadora': 'CJ'
-                                            }
-"""
                         os.remove(temp_pdf.name)

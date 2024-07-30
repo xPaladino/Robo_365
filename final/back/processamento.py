@@ -32,14 +32,12 @@ def connect_o365(client_id, secret_id, tenant_id):
 def fetch_emails_o365(account, since_date, before_date):
     mailbox = account.mailbox()
     inbox = mailbox.inbox_folder()
-
-    print(since_date)
-    since_date_str = since_date.strftime('%Y-%m-%d')
-    print(since_date_str)
+    since_date_str = since_date.strftime('%Y-%m-%dT%H:%M:%SZ')
     #before_date_str = before_date.strftime('%Y-%m-%dT%H:%M:%SZ')
-    before_date_str = before_date.strftime('%Y-%m-%d')
+    before_date_str = before_date.strftime('%Y-%m-%dT%H:%M:%SZ')
+    print(f"Busca entre {since_date_str} e {before_date_str}")
 
-    messages = inbox.get_messages(
+    messages = inbox.get_messages(limit=None,
         query=f'ReceivedDateTime ge {since_date_str} and ReceivedDateTime lt {before_date_str}',
         download_attachments=True)
 
@@ -68,20 +66,23 @@ def main(output_dir,search_date, search_date_end):
 
     for message in messages:
         #process_attachments(message, './attachments', nf_pdf_map)
-        process_adm(message,'./attachments',nf_pdf_map)
-        process_chs(message, './attachments', nf_pdf_map)
-        process_btg(message,'./attachments',nf_zip_map)
+        process_adm(message,'./attachments',nf_pdf_map) ##
+        process_btg(message,'./attachments',nf_zip_map) ##
+        process_coamo(message, './attachments', nf_pdf_map, nf_zip_map) ##
+        process_chs(message, './attachments', nf_pdf_map)##
+        process_cofco(message,'./attachments', nf_pdf_map)##
         process_bunge(message, './attachments', nf_excel_map)
         process_viterra(message, './attachments', nf_pdf_map,nf_zip_map)
-        process_cofco(message,'./attachments', nf_pdf_map)
         process_ldc(message, './attachments', nf_zip_map)
-        process_coamo(message, './attachments', nf_zip_map)
         process_royal(message,'./attachments',nf_pdf_map)
         process_olam(message, './attachments', nf_excel_map)
         process_cj(message,'.attachments',nf_pdf_map,nf_excel_map)
     try:
-        save_to_excel(nf_pdf_map, nf_zip_map, nf_excel_map, os.path.join(output_dir, 'notas_fiscais365.xlsx'))
-        return True
+        nf_pdf_count, resultados_pdf_count,\
+            nf_zip_count, resultados_zip_count,\
+            nf_excel_count, resultados_excel_count \
+            = save_to_excel(nf_pdf_map, nf_zip_map, nf_excel_map, os.path.join(output_dir, 'notas_fiscais365.xlsx'))
+        return nf_pdf_count, resultados_pdf_count, nf_zip_count, resultados_zip_count, nf_excel_count, resultados_excel_count
     except Exception as e:
         print(f'erro {e}')
-        return False
+        return None, None

@@ -81,8 +81,61 @@ def process_bunge(message, salve_folder, nf_excel_map):
                                                      'cnpj': cnpj_bunge,
                                                      'chave_comp': chaves_comp,
                                                      'peso_nfe': peso_bungue,
+                                                     'serie_comp': '0',
+                                                     'peso_comp': '0',
                                             'transportadora': 'BUNGE'})  # peso_bungue})
+                        elif 'NOTA' in df.columns and 'CHAVE' in df.columns:
+                            cnpj_bunge = '84046101028101'
+                            nfe_ref = df['NOTA'].dropna().astype(str)
+                            nfe_ref = [nf.split('.')[0] for nf in nfe_ref]
 
+                            chave_ref_clean = df['CHAVE'].dropna().astype(
+                                str).str.extract(
+                                r'(\d{44})')
+                            chave_ref_clean = chave_ref_clean.dropna().values.tolist()
+                            print(chave_ref_clean)
+                            nf_ref_cleaned = df['NOTA DE REFERÊNCIA'].dropna().astype(str)
+                            nf_ref_cleaned = [nf.split('-')[0] for nf in nf_ref_cleaned]
+
+                            #serie_ref = [nf.split('-')[1] for nf in df['NOTA DE REFERÊNCIA'].dropna().astype(str)]
+                            #print(serie_ref)
+                            replica_nfe = []
+                            replica_chave_nfe_ref = []
+                            replica_serie_nfe = []
+                            replica_chave = []
+
+                            for nf, chave_comp, nfe in zip(
+                                    nf_ref_cleaned,
+                                    chave_ref_clean, nfe_ref):
+                                chaves_comp = ''.join(chave_comp)
+                                print('teste')
+                                nf_excel_map.append({'nota_fiscal': nf,
+                                                     'data_email': message.received,
+                                                     'chave_acesso': '0',
+                                                     'email_vinculado': message.subject,
+                                                     'serie_nf': '0',
+                                                     'data_emissao': '0',
+                                                     'nfe': nfe,
+                                                     'cnpj': cnpj_bunge,
+                                                     'chave_comp': chaves_comp,
+                                                     'peso_nfe': '0',
+                                                     'serie_comp': '0',
+                                                     'peso_comp': '0',
+                                                     'transportadora': 'BUNGE'})  # peso_bungue})
+                        else:
+                            nf_excel_map.append({'nota_fiscal': '0',
+                                                 'data_email': message.received,
+                                                 'chave_acesso': 'SEM LEITURA',
+                                                 'email_vinculado': message.subject,
+                                                 'serie_nf': 'SEM LEITURA',
+                                                 'data_emissao': 'SEM LEITURA',
+                                                 'nfe': attachment.name,
+                                                 'cnpj': 'SEM LEITURA',
+                                                 'chave_comp': 'SEM LEITURA',
+                                                 'peso_nfe': '0',
+                                                 'serie_comp': 'SEM LEITURA',
+                                                 'peso_comp': 'SEM LEITURA',
+                                                 'transportadora': 'BUNGE'})
                     os.remove(temp_xlsx.name)
                 else:
                     pass
