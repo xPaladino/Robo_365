@@ -8,7 +8,6 @@ from final.back import processamento
 from datetime import datetime
 from final.back.SQL.mapa_estoque import start_mapa
 import random
-
 import time
 
 
@@ -248,7 +247,6 @@ def process_and_show_message_mapa(folder_path, selected_date, selected_date_end,
     # Exibir mensagem de conclusão do processamento
 
     if success:
-        # messagebox.showinfo("Concluído", "Processamento concluído com sucesso!")
         messagebox.showinfo("Concluído", f"Dados salvos em: {folder_path}\n")
 
     else:
@@ -300,8 +298,6 @@ def main():
 
     notebook = ttk.Notebook(root)
     notebook.pack(fill='both', expand=True)
-
-    # Aba para processamento de e-mails
     frame_email = tk.Frame(notebook)
     notebook.add(frame_email, text='Processamento de E-mails')
 

@@ -8,6 +8,14 @@ import pandas as pd
 from PyPDF2 import PdfReader
 
 def process_bunge(message, salve_folder, nf_excel_map):
+    """
+    Essa função é responsável por ler e tratar os dados vindos do Cliente BUNGE, extraído de um arquivo Excel,
+    podendo ser alterado o estilo de captura da Nota Fiscal para se adequar ao projeto. A captura de um Excel é
+    realizada pela coluna que é lida, diferente do PDF/ZIP que precisa achar um padrão.
+    :param message: Variável pertencente a lista Messages.
+    :param salve_folder: Local onde vai ser salvo o arquivo.
+    :param nf_excel_map: Lista responsável por salvar os dados referente ao EXCEL.
+    """
     corpo_email = message.body
     print(f"{message.received} - {message.subject}")
     if re.search(r'@bunge\.com', corpo_email):

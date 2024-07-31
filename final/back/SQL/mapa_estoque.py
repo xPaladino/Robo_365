@@ -23,8 +23,6 @@ def start_mapa(output_dir, data_inicio, data_fim):
 
     }
     connection = None
-    #conn_str = f'DRIVER={{SQL SERVER}};SERVER={server};DATABASE={database};UID={user};' \
-    #           f'PWD={senha}'
 
     wb = Workbook()
     ws = wb.active
@@ -35,13 +33,10 @@ def start_mapa(output_dir, data_inicio, data_fim):
     data_fim_str = datetime.strptime(data_fim, "%d/%m/%Y %H:%M:%S")
     data_fim_formatada = data_fim_str.strftime("%Y-%m-%d %H:%M:%S")
 
-    print(f'{data_inicio_formatada} {data_fim_formatada}')
     try:
         connection = pymssql.connect(**db_config)
         cursor = connection.cursor()
         cursor.execute(f"exec CliRochaRelExpMapaEstRobo 0,'','{data_inicio_formatada}','{data_fim_formatada}'")
-        print(f'Data Inicio {data_inicio}, data Fim {data_fim}')
-
         resultado = cursor.fetchall()
 
         colunas = [col[0] for col in cursor.description]
@@ -57,7 +52,6 @@ def start_mapa(output_dir, data_inicio, data_fim):
 
         # Salvar o workbook
         wb.save(os.path.join(output_dir, "mapadeestoque.xlsx"))
-        # wb.save("mapadeestoque.xlsx")
         return True
     except Exception as e:
         print(f"Erro ao conectar ao banco de dados: {e}")

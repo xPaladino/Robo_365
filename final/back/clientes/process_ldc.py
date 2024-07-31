@@ -3,6 +3,30 @@ from PyPDF2 import PdfReader
 
 
 def process_ldc(message, save_folder, nf_zip_map):
+    """
+    Essa função é responsável por ler e tratar os dados vindos do Cliente LDC (Dreyfus), extraído de um arquivo ZIP,
+    podendo ser alterado os padrões de captura da Nota Fiscal para se adequar à esse projeto, os padrões atuais de
+    captura são:
+
+    Padrão 1.0:
+
+    notas_fiscais.extend(
+                                                re.finditer(r'(?:número:|REF\s+A\s+NOTA'
+                                                            r'|NF\s+Nº:|ORIGEM\s+NR.:|referente\s+NF'
+                                                            r'|referente\s+a\s+NF|'
+                                                            r'NF:)'
+                                                            r'\s*(?:\d+\s*,\s*)?(\d{4,})'
+                                                            r'|Nota\s+Fiscal:\s*(?:\d+\s*,\s*)?(\d{4,})|'
+                                                            r'(?:NOTA\s+FISCAL\s+DE\s+ORIGEM\s+NR\.:\s+)(\d{2,4}.\d{3,6})',
+                                                            pdf_text,
+                                                            re.IGNORECASE))
+
+    Caso seja realizado alguma alteração, favor documentar.
+    :param message: Varíavel pertencente a lista Messages.
+    :param save_folder: Local onde vai ser salvo o arquivo.
+    :param nf_zip_map: Dicionário responsável por salvar os dados referente aos ZIP's.
+    :return:
+    """
     if re.search(r'@ldc\.com', message.body):
         print("TEM LDC")
         if message.attachments:

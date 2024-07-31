@@ -17,7 +17,7 @@ def parse_datetime(date_str):
 
 
 def trocar_cores(ws, row_index):
-    # largura
+    # largura colunas
     for column in ['A', 'E', 'H', 'L', 'M', 'H', 'O', 'Q']:
         ws.column_dimensions[column].width = 12
     for column in ['J', 'N']:
@@ -44,7 +44,6 @@ def trocar_cores(ws, row_index):
         cor_nf = PatternFill(start_color="FCBC5D", end_color="FCBC5D", fill_type="solid")
         ws[f"{column}{row_index}"].fill = cor_nf
 
-
 def save_to_excel(nf_pdf_map, nf_zip_map, nf_excel_map, file_name):
     wb = Workbook()
     ws = wb.active
@@ -65,10 +64,7 @@ def save_to_excel(nf_pdf_map, nf_zip_map, nf_excel_map, file_name):
 
     row_index = 2
     resultados_pdf, resultados_zip, resultados_excel = conecta_sql(nf_zip_map, nf_pdf_map, nf_excel_map)
-    print(f"nf pdf {len(nf_pdf_map.items())}")
-    print(f"nf pdf teste{len(resultados_pdf)}")
 
-    #print(resultados_dict)
     try:
         row_index = 2
         resultados_dict = {str(r[0]): r for r in resultados_pdf}
@@ -150,41 +146,11 @@ def save_to_excel(nf_pdf_map, nf_zip_map, nf_excel_map, file_name):
     except Exception as e:
         print(f"Erro ao salvar a planilha vinda do ZIP {e}")
 
-    """try:
-        for valor, info in nf_zip_map.items():
-            ws.cell(row=row_index, column=1, value="ZIP")
-            if isinstance(info['data_email'], datetime):
-                ws.cell(row=row_index, column=2, value=info['data_email'].strftime('%Y-%m-%d %H:%M:%S'))
-            else:
-                ws.cell(row=row_index, column=2, value=str(info['data_email']))
-            #ws.cell(row=row_index, column=3, value=str(resultado[2]))
-            ws.cell(row=row_index, column=4, value=str(info['serie_nf'] if info['serie_nf'] != '0' else '0'))
-            ws.cell(row=row_index, column=5, value=str(info.get('nota_fiscal', 'não encontrei NF')))
-            #ws.cell(row=row_index, column=5, value=str(resultado[0]))
-            ws.cell(row=row_index, column=6, value=str(info['nfe'] if info['nfe'] != '0' else '0'))
-            # ws.cell(row=row_index, column=6, value=info['data_emissao'] if info['data_emissao'] != '0' else '0')
-            #ws.cell(row=row_index, column=8, value=resultado[1])
-            #ws.cell(row=row_index, column=7, value=data_ajustada)  # DATA DESCARGA
-            # ws.cell(row=row_index, column=8, value=info['chave_acesso'] if info['chave_acesso'] != '0' else str(resultado[1]))
-
-            ws.cell(row=row_index, column=9, value=info['chave_comp'] if info['chave_comp'] != '0' else '0')
-            #ws.cell(row=row_index, column=10, value=str(resultado[4]).replace('.', ','))  # PESO
-            #ws.cell(row=row_index, column=11, value=str(resultado[7]))  # LOTE
-            #ws.cell(row=row_index, column=12, value=str(resultado[9]))  # PRODUTO
-            ws.cell(row=row_index, column=13, value=info['cnpj'] if info['cnpj'] != '0' else '0')
-            ws.cell(row=row_index, column=14, value=info.get('email_vinculado', ''))
-
-            trocar_cores(ws, row_index)
-            row_index += 1
-    except Exception as e:
-        print(f"Erro ao salvar a planilha vinda do ZIP {e}")"""
-
     try:
         if not nf_excel_map:
             print('nenhum arquivo')
         else:
             for info, resultado in zip(nf_excel_map, resultados_excel):
-                # for info in nf_excel_map:
                 data_descarga = str(resultado[8])
                 formatob = '%d/%m/%Y %H:%M:%S'
 
@@ -239,10 +205,6 @@ def conecta_sql(nf_zip_map, nf_pdf_map, nf_excel_map):  # , file_name):
     user = os.getenv('DB_USER')
     senha = os.getenv('DB_PASSWORD')
 
-    # consulta_nfe_zip = ', '.join([f"'{info.get('nfe', '0')}'" for valor, info in nf_zip_map.items()])
-    # consulta_nfe_pdf = ', '.join([f"'{info.get('nfe', '0')}'" for valor, info in nf_pdf_map.items()])
-    # consulta_nfe_excel=', '.join([f"'{info.get('nfe', '0')}'" for info in nf_excel_map])
-
     chaves_consulta_zip = [f"'{info.get('nota_fiscal', '0')}'" for valor, info in nf_zip_map.items()]
     chaves_consulta_pdf = [f"'{info.get('nota_fiscal', '0')}'" for valor, info in nf_pdf_map.items()]
     chaves_consulta_excel = [f"'{info.get('nota_fiscal', '0')}'" for info in nf_excel_map]
@@ -260,8 +222,7 @@ def conecta_sql(nf_zip_map, nf_pdf_map, nf_excel_map):  # , file_name):
         cursor_pdf = conn.cursor()
         cursor_zip = conn.cursor()
         cursor_excel = conn.cursor()
-        # consulta_pdf = f"Select Nota, Chave_nfe, RazaoSocial, cnpj, diferenca, Dt_Emissao, codigo, lote, dtMovimento, Produto" \
-        #               f" from eis_v_mapa_estoque_python where (Nota in ({chaves_consulta_pdf}) and cnpj in ({cnpj_consulta_pdf}))"
+
         consulta_pdf = f"""
         WITH ChavesNumeradas AS (
             SELECT
@@ -313,9 +274,6 @@ def conecta_sql(nf_zip_map, nf_pdf_map, nf_excel_map):  # , file_name):
             Posicao;
         """
 
-        # print(f'consulta pdf : {consulta_pdf}')
-        # consulta_zip = f"Select Nota, Chave_nfe, RazaoSocial, cnpj, diferenca, Dt_Emissao, codigo, lote, dtMovimento, Produto" \
-        #               f" from eis_v_mapa_estoque_python where (Nota in ({chaves_consulta_zip}) and cnpj in ({cnpj_consulta_zip}) and FlagCompl = 'N')"
         consulta_zip = f"""
                 WITH ChavesNumeradas AS (
                     SELECT
@@ -364,9 +322,7 @@ def conecta_sql(nf_zip_map, nf_pdf_map, nf_excel_map):  # , file_name):
                 ORDER BY
                     Posicao;
                 """
-        # consulta_excel = f"Select Nota, Chave_nfe, RazaoSocial, cnpj, diferenca, Dt_Emissao, codigo, lote, dtMovimento, Produto" \
-        #               f" from eis_v_mapa_estoque_python where (Nota in ({chaves_consulta_excel}) and cnpj in ({cnpj_consulta_excel}) and FlagCompl = 'N') OR" \
-        #               f" (Nota in ({consulta_nfe_excel}) and cnpj in ({cnpj_consulta_excel}))"
+
         consulta_excel = f"""
                         WITH ChavesNumeradas AS (
                             SELECT
@@ -415,7 +371,6 @@ def conecta_sql(nf_zip_map, nf_pdf_map, nf_excel_map):  # , file_name):
                         ORDER BY
                             Posicao;
                         """
-        # consulta_sql = f"Select diferenca from eis_v_mapa_estoque_python where Chave_Nfe on ({chaves_consulta})"
         resultado_pdf, resultado_zip, resultado_excel = [], [], []
 
         try:
@@ -452,4 +407,3 @@ def conecta_sql(nf_zip_map, nf_pdf_map, nf_excel_map):  # , file_name):
     except Exception as e:
         print(f"Erro ao preparar ou fechar a conexão: {e}")
         return None, None, None
-        # return resultados

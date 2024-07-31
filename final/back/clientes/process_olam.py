@@ -8,6 +8,14 @@ import pandas as pd
 from PyPDF2 import PdfReader
 
 def process_olam(message, salve_folder, nf_excel_map):
+    """
+    Essa função é responsavel por ler e tratar os dados vindos do Cliente OLAM, extraído de um arquivo Excel,
+    podendo ser alterado o estilo de captura da Nota Fiscal para se adequar ao projeto. A captura de um Excel é
+    realizada pela coluna que é lida, diferente do PDF/ZIP que precisa achar um padrão.
+    :param message: Variável pertencente a lista Messages.
+    :param salve_folder: Local onde vai ser salvo o arquivo.
+    :param nf_excel_map: Lista responsável por salvar os dados referente ao EXCEL.
+    """
     corpo_email = message.body
     print(f"{message.received} - {message.subject}")
     if re.search(r'@olam\.com|@olamagri\.com', corpo_email):
@@ -191,7 +199,6 @@ def process_olam(message, salve_folder, nf_excel_map):
                             os.remove(temp_xlsx.name)
 
                     if file_extension == '.xlsm':
-                        print("teste xlsm")
                         with tempfile.NamedTemporaryFile(suffix='.xlsx',delete=False) as temp_xlsx:
                             temp_xlsx.write(decoded_content)
                             pd.set_option('display.max_columns', None)

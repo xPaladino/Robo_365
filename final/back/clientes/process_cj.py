@@ -5,6 +5,38 @@ from pdfminer.high_level import extract_text
 
 
 def process_cj(message, save_folder, nf_pdf_map, nf_excel_map):
+    """
+    Essa função é responsável por ler e tratar os dados vindos do Cliente CJ, extraído de um arquivo EXCEL e/ou PDF,
+    nesse caso em específico, se houver ao menos um arquivo Excel sendo encaminhado pelo cliente, é feito um tratamento
+    em baseado na NFE do PDF combinando com a mesma informação vinda do EXCEL.
+    Caso encontre somente o PDF, o padrão é esse:
+
+    Padrão PDF 1.0:
+
+    notas_fiscais.extend(
+    re.finditer(r'(?:número:|REF\s+A\s+NOTA'
+    r'|NF\s+Nº:|ORIGEM\s+NR.:|referente\s+NF'
+    r'|referente\s+a\s+NF|a\s+NFE|'
+    r'COMPLEMENTO\s+DA\s+NF|'
+    r'NF:|REFERENTE\s+NFO)'
+    r'\s*(?:\d+\s*,\s*)?(\d{4,})|'
+    r'nota\s+complementar\s+ref\s+a\s+nfe\s*(?:\d+\s*,\s*)?(\d{4,})'
+    r'|nota\s+complementar\s+ref.\s+NF\s+n\s*(?:\d+\s*,\s*)?(\d{4,})|'
+    r'NF\(\s*s\)\s*\(([\d,\s*]+)\)|'
+    r'NFES\s+((?:\d+\s*,\s*)*\d+\s*E\s*\d+)|'
+    r'FISCAIS\s+No\s+\d+(?:/\d+)?\s+E\s+\d+|'
+    r'NOTAS\s+REFERENCIA:\s+\d+(?:/\d+)?\s+E\s+\d+|'
+    r'FISCAIS\s+No\s*((?:\d+(?:,\s*)?)+)|'
+    r'NOTAS\s+REFERENCIA:\s+((?:\d+(?:,\s*)?)+(?:\s+E\s+\d+)?)',
+    pdf_reader,
+    re.IGNORECASE))
+
+    Caso seja realizado alguma alteração, favor documentar.
+    :param message: Variável pertencente a lista Messages.
+    :param save_folder: Local onde vai ser salvo o arquivo.
+    :param nf_pdf_map: Dicionário responsável por salvar os dados referente aos PDF's.
+    :param nf_excel_map: Lista responsável por salvar os dados referente aos EXCEL's.
+    """
     corpo_email = message.body
     if re.search(r'@cjtrade\.net', corpo_email):
         print('Tem CJ')
@@ -234,18 +266,12 @@ def process_cj(message, save_folder, nf_pdf_map, nf_excel_map):
                                             r'\s*(?:\d+\s*,\s*)?(\d{4,})|'
                                             r'nota\s+complementar\s+ref\s+a\s+nfe\s*(?:\d+\s*,\s*)?(\d{4,})'
                                             r'|nota\s+complementar\s+ref.\s+NF\s+n\s*(?:\d+\s*,\s*)?(\d{4,})|'
-                                            # r'\b(\d+)\s+(?:de\s+\d{2}/\d{2}/\d{4})|'
                                             r'NF\(\s*s\)\s*\(([\d,\s*]+)\)|'
                                             r'NFES\s+((?:\d+\s*,\s*)*\d+\s*E\s*\d+)|'
                                             r'FISCAIS\s+No\s+\d+(?:/\d+)?\s+E\s+\d+|'
                                             r'NOTAS\s+REFERENCIA:\s+\d+(?:/\d+)?\s+E\s+\d+|'
                                             r'FISCAIS\s+No\s*((?:\d+(?:,\s*)?)+)|'
                                             r'NOTAS\s+REFERENCIA:\s+((?:\d+(?:,\s*)?)+(?:\s+E\s+\d+)?)',
-                                            # r'FISCAIS\s+No\s+\d+(?:/\d+)?\s+E\s+\d+',
-                                            # r'Numero\s+Contrato:(\s+\d+)',
-
-                                            # r'NFs\s+de\s+(\d+/\d+/\d+)\s+\((.*?)\)',
-
                                             pdf_reader,
                                             re.IGNORECASE))
                             if not notas_fiscais:

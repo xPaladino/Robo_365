@@ -3,6 +3,30 @@ from PyPDF2 import PdfReader
 from pdfminer.high_level import extract_text
 
 def process_royal(message, save_folder, nf_pdf_map):
+    """
+    Essa função é repsonsável por ler e tratar os dados vindos do Cliente ADM, extraído de um arquivo PDF, podendo ser
+    alterado os padrões de captura da Nota Fiscal para se adequar à esse projeto, os padrões atuais de captura saõ:
+
+    Padrão 1.0:
+
+    notas_fiscais.extend(re.finditer(
+    r'(?:#NF:|Nota\s+Fiscal:|fiscais:|NF:|'
+    r'Ref\s+NF|'
+    r'NF\s+n|'
+    r'Nfe\s+de\s+n\s+:|'
+    r'Referente\s+NF|'
+    r'Nota\(s\)\s+de\s+Origem:\s*|'
+    r'REF\s+A\s+NOTA)'
+    r'\s*(?:\d+\s*,\s*)?(\d{4,8})|'
+    r'ORIGEM\s+NR\.: (\d+(\.\d+)?)|'
+    r'(:?REF\s+NFS\s+)(\d+/\d+/\d+)\s+\((.*?)\)',
+    pdf_reader, re.IGNORECASE))
+
+    Caso seja realizado alguma alteração, favor documentar.
+    :param message: Variável pertecente a lista Messages.
+    :param save_folder: Local onde vai ser salvo o arquivo.
+    :param nf_pdf_map: Dicionário responsável por salvar os dados referente aos PDF's
+    """
     corpo_email = message.body
     if re.search(r'@royalagro\.com',corpo_email):
         print('Tem Royal')

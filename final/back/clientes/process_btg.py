@@ -1,7 +1,21 @@
 import os, re, base64, tempfile, zipfile
 from PyPDF2 import PdfReader
 
+
 def process_btg(message, save_folder, nf_zip_map):
+    """
+    Essa função é responsável por ler e tratar os dados vindos do Cliente BTG, extraídos de um arquivo ZIP, podendo
+    ser alterado os padrões de captura da Nota Fiscal para se adequar à esse projeto, os padrões atuais de captura são:
+
+    Padrão 1.0:
+    notas_fiscais.extend(re.finditer(r'NFs\s+de\s+(\d+/\d+/\d+)\s+\((.*?)\)', pdf_text, re.IGNORECASE))
+
+    Caso seja realizado alguma alteração, favor documentar.
+
+    :param message: Varíavel pertencente a lista Messages.
+    :param save_folder: Local onde vai ser salvo o arquivo.
+    :param nf_zip_map: Dicionário responsável por salvar os dados referente aos ZIP's.
+    """
 
     if re.search(r'@btgpactual\.com', message.body):
         print("TEM BTG")
@@ -12,14 +26,14 @@ def process_btg(message, save_folder, nf_zip_map):
                     decoded_content = base64.b64decode(attachment.content)
                     with tempfile.TemporaryDirectory() as tmp_dir:
                         zip_file_path = os.path.join(tmp_dir, 'attachment.zip')
-                        with open(zip_file_path,'wb') as f:
+                        with open(zip_file_path, 'wb') as f:
                             f.write(decoded_content)
-                        with zipfile.ZipFile(zip_file_path,'r') as zip_ref:
+                        with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
                             zip_ref.extractall(tmp_dir)
                         for file_name in os.listdir(tmp_dir):
                             file_path = os.path.join(tmp_dir, file_name)
                             if file_path.endswith('.pdf'):
-                                with open(file_path,'rb') as pdf_file:
+                                with open(file_path, 'rb') as pdf_file:
                                     pdf_reader = PdfReader(pdf_file)
                                     pdf_text = ''
                                     for page in pdf_reader.pages:

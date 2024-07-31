@@ -3,7 +3,24 @@ from PyPDF2 import PdfReader
 from pdfminer.high_level import extract_text
 
 def process_adm(message, save_folder, nf_pdf_map):
+    """
+    Essa função é responsável por ler e tratar os dados vindos do Cliente ADM, extraído de um arquivo PDF, podendo ser
+    alterado os padrões de captura da Nota Fiscal para se adequar à esse projeto, os padrões atuais de captura são:
 
+    Padrão 1.0:
+
+    notas_fiscais.extend(
+    re.finditer( r'(?:#NF:|Nota\s+Fiscal:|fiscais:|NF:|' r'Ref\s+NF|' r'NF\s+n|' r'Nfe\s+de\s+n\s+:|'
+    r'REF.\s+NOTA\s+FISCAL|' r'Referente\s+NF|' r'REF\s+A\s+NOTA|' r'REF\s+A\s+NOTA\s+N)' r'\s*(?:\d+\s*,\s*)?(\d{3,
+    8})|' r'ORIGEM\s+NR\.: (\d+(\.\d+)?)|' r'(:?REF\s+NFS\s+)(\d+/\d+/\d+)\s+\((.*?)\)|' r'Referente\s+NF\s+(\d{
+    2}\s+\d+)', pdf_reader, re.IGNORECASE))
+
+    Caso seja realizado alguma alteração, favor documentar.
+    :param message: Variável pertencente a lista Messages.
+    :param save_folder: Local onde vai ser salvo o arquivo.
+    :param nf_pdf_map: Dicionário responsável por salvar os dados referente aos PDF's.
+
+    """
     if re.search(r'@adm\.com', message.body):
         print('tem ADM')
         if message.attachments:
@@ -19,15 +36,15 @@ def process_adm(message, save_folder, nf_pdf_map):
 
                         notas_fiscais = []
                         notas_fiscais.extend(re.finditer(
-                            r'(?:#NF:|Nota\s+Fiscal:|fiscais:|NF:|'  # padrao
-                            r'Ref\s+NF|'  # adicionado royal
-                            r'NF\s+n|'  # adicionado royal
+                            r'(?:#NF:|Nota\s+Fiscal:|fiscais:|NF:|'
+                            r'Ref\s+NF|'
+                            r'NF\s+n|'
                             r'Nfe\s+de\s+n\s+:|'
                             r'REF.\s+NOTA\s+FISCAL|'
                             r'Referente\s+NF|'
                             r'REF\s+A\s+NOTA|'
-                            r'REF\s+A\s+NOTA\s+N)'  # adicionado para usimat destilaria
-                            r'\s*(?:\d+\s*,\s*)?(\d{3,8})|'  # padrao 
+                            r'REF\s+A\s+NOTA\s+N)'
+                            r'\s*(?:\d+\s*,\s*)?(\d{3,8})|'
                             r'ORIGEM\s+NR\.: (\d+(\.\d+)?)|'
                             r'(:?REF\s+NFS\s+)(\d+/\d+/\d+)\s+\((.*?)\)|'
                             r'Referente\s+NF\s+(\d{2}\s+\d+)',

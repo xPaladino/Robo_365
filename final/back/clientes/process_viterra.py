@@ -6,6 +6,32 @@ from PyPDF2 import PdfReader
 from pdfminer.high_level import extract_text
 
 def process_viterra(message, salve_folder, nf_pdf_map, nf_zip_map):
+    """
+    Essa função é responsável por ler e tratar os dados vindos do Cliente Viterra, extraídos de PDF e/ou ZIP,
+    podendo ser alterado os padrões de captura da Nota Fiscal para se adequar à esse projeto, os padrões atuais de
+    captura são:
+
+    Padrão 1.0:
+
+    nf.extend(re.finditer(r'REF\.\s+NF\s+n\s+(\d+(?:\s*(?:,\s*|\s+e\s+)?\d+)*)'
+        r'|NF\s+REFERENCIADA:\s*(\d+)|'
+        r'REF.\s+NFe:\s*(\d+)|'
+        r'Complementar\s+à\s+NF\s+Núm\s+(\d+)|,\s*(\d{4,})\s+de|'
+        r'REFERENTE\s+NF\s+(\d+(?:\s*(?:,\s*|\s+e\s+|\s*/\s*)?\d+)*)'
+        r'|NFe\s+de\s+N\s+:\s+((?:\d+\s*/\s*)*\d+)|'
+        r'notas\s+fiscais:\s*(\d+(?:\s+\d+)*)|'
+        r'REFERENTE\s+AS\s+NFS\s+(\d+(?:\s*(?:,\s*|\s+E\s+|\s*e\s*|\s*/\s*)?\d+)*)|'
+        r'NOTA\s+FISCAL\s+NR.\s*(\d+)|'
+        r'REF.\s+NFe\s+de\s+N\s+:\s*((?:\d+\s*/\s*)*\d+)|'
+        r'REF.\s+Nfe:\s*(\d+)', pdf_reader, re.IGNORECASE))
+
+    Caso seja realizado alguma alteração, favor documentar.
+    :param message: Varíavel pertecente a lista Messages.
+    :param salve_folder: Local onde vai ser salvo o arquivo.
+    :param nf_pdf_map: Dicionário responsável por salvar os dados referente aos PDF's.
+    :param nf_zip_map: Dicionário responsável por salvar os dados referente aos ZIP's.
+
+    """
     corpo_email = message.body
     if re.search(r'@viterra\.com', corpo_email):
         print('tem viterra')
@@ -86,7 +112,7 @@ def process_viterra(message, salve_folder, nf_pdf_map, nf_zip_map):
                             , pdf_reader, re.IGNORECASE))
                         if not data_matches:
                             data_matches.append(0)
-                        print(data_matches)
+
                         nfe_match.extend(
                             re.finditer(r'(?:NF-e\s*No.|NF-e\s+Nº)\s+(\d+(?:\.\d+)*)', pdf_reader,
                                         re.IGNORECASE))

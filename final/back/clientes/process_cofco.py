@@ -3,6 +3,26 @@ from PyPDF2 import PdfReader
 from pdfminer.high_level import extract_text
 
 def process_cofco(message, save_folder, nf_pdf_map):
+    """
+    Essa função é responsavel por ler e tratar os dados vindos do Cliente COFCO, extraído de um arquivo PDF, podendo ser
+    alterado os padrões de captura da Nota Fiscal para se adequar à esse projeto, os padrões atuais de captura são:
+
+    Padrão 1.0:
+
+    notas_fiscais.extend(re.finditer(
+    r'NF:\s*(\d{4,8})(?:\s*,\s*(\d{4,8}))*|'
+    #r'nota\(s\)\s*fiscais:\s*(?:\d+\s*,\s*)?(\d{4,9})|'
+    r'nota\(s\)\s*fiscais:\s+(\d+(?:\s*(?:,\s*|\s+e\s+|\s*/\s*)?\d+)*)|'
+    r'PESO\s+REF\.\s+AS\s+NFS\s+(\d+(?:\s*(?:,\s*|\s+e\s+|\s*/\s*)?\d+)*)|'
+    r'PESO\s+REF\..A\s*NF\s*(\d{4,8})|'
+    r'REF.\s+NF\s*(\d{4,8})',
+    pdf_reader, re.IGNORECASE))
+
+    Caso seja realizado alguma alteração, favor documentar.
+    :param message: Variável pertecente a lista Messages.
+    :param save_folder: Local onde vai ser salvo o arquivo.
+    :param nf_pdf_map: Dicionário responsável por salvar os dados referente aos PDF's.
+    """
     if re.search(r'@cofcointernational\.com',message.body):
         print('Tem COFCO')
         if message.attachments:
