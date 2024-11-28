@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, filedialog
-from tkcalendar import Calendar
+import os
 from tkinter import messagebox
 from PIL import Image, ImageTk, ImageSequence
 import threading
@@ -9,7 +9,8 @@ from datetime import datetime
 from final.back.SQL.mapa_estoque import start_mapa
 import random
 import time
-
+import pytz
+import requests
 
 def browse_folder(entry):
     folder_selected = filedialog.askdirectory()
@@ -20,28 +21,89 @@ def browse_folder(entry):
         messagebox.showwarning("Atenção", "Por favor, escolha um diretório para continuar.")
 
 
+def mensagens_diarias():
+    dia_semana = datetime.now().weekday()
+    mensagens = {
+        0: [
+            "Sua espera será recompensada!\nPrepare-se para o sucesso!",
+            "Aguarde um pouco, pegue um café.\n Ou dois.",
+            "Estamos quase lá, mais um instante por favor.\n Ou dois. Ou três.",
+            "Só um momento, estamos trabalhando nisso.\n Literalmente."
+        ],
+        1: [
+            "Estamos a todo vapor! Mais alguns segundos.\n Prometemos.",
+            "Obrigado pela paciência,\n só mais um pouquinho.",
+            "Quase pronto, estamos finalizando.\n Não, sério!",
+            "Um segundo, por favor.\n O hamster está correndo na roda."
+        ],
+        2: [
+            "Um momento.\n Prometo.",
+            "Estamos no caminho certo.\n Só perdemos o mapa.",
+            "Relaxe, e se isso não ajudar,\n um café pode ajudar!",
+            "Estamos trabalhando duro.\n Ou fingindo muito bem."
+        ],
+        3: [
+            "Isso pode demorar um pouco.\n Afinal, boa arte leva tempo.",
+            "Quase lá. Por favor,\n mantenha as mãos e pés dentro do veículo.",
+            "Seu arquivo está quase pronto.\n É uma promessa de programador!",
+            "Estamos quase lá! \n É sempre mais escuro antes do amanhecer.",
+            "Cada segundo que passa,\né um segundo mais perto de estar pronto."
+        ],
+        4: [
+            "Sextoooooou!\nMas ainda estamos trabalhando :)",
+            "Falta muito pra daqui a pouco?\nQuase lá!",
+            "Último dia útil,\naguarde mais um pouco.",
+            "Podia estar em casa\nmas estamos aqui ajudando.\nAguarde!",
+            "Graças a Deus hoje é sexta hein!",
+            "Sextou com S de eSpere um pouco haha"
+        ],
+        5: [
+            "Teste Sábado"
+        ],
+        6: [
+            "Teste Domingo"
+        ],
+    }
+    return mensagens.get(dia_semana)
+
+
 def start_processing(folder_entry, date_entry, date_entry_end):
+    local_tz = pytz.timezone('America/Sao_Paulo')
     folder_path = folder_entry.get()
     search_date = date_entry.get()
     search_date_end = date_entry_end.get()
     escolha_inicio = None
     escolha_fim = None
 
+
     if not search_date or not search_date_end:
         messagebox.showwarning("Atenção", "Por favor, escolha um período para continuar.")
         return
 
-    if search_date:
-        ajusta = datetime.strptime(search_date, "%d/%m/%Y")
-        formata = ajusta.strftime("%Y-%m-%d")
+    try:
+        ajusta = datetime.strptime(search_date, "%d/%m/%Y %H:%M:%S")
+        ajusta_tz = local_tz.localize(ajusta)
+        convert = ajusta_tz.astimezone(pytz.utc)
+        formata = convert.strftime("%Y-%m-%d %H:%M:%S")
         escolha_inicio = formata
-    search_date = escolha_inicio
+        search_date = escolha_inicio
 
-    if search_date_end:
-        ajusta = datetime.strptime(search_date_end, "%d/%m/%Y")
-        formata = ajusta.strftime("%Y-%m-%d")
+    except ValueError:
+        messagebox.showwarning("Atenção!", "Olá, verifique os valores preenchidos.\n"
+                                           "O preenchimento correto é dia/mes/ano hora:minuto:segundo =]")
+        return
+
+    try:
+        ajusta = datetime.strptime(search_date_end, "%d/%m/%Y %H:%M:%S")
+        ajusta_tz = local_tz.localize(ajusta)
+        convert = ajusta_tz.astimezone(pytz.utc)
+        formata = convert.strftime("%Y-%m-%d %H:%M:%S")
         escolha_fim = formata
-    search_date_end = escolha_fim
+        search_date_end = escolha_fim
+    except ValueError:
+        messagebox.showwarning("Atenção!", "Olá, verifique os valores preenchidos.\n"
+                                           "O preenchimento correto é dia/mes/ano hora:minuto:segundo =]")
+        return
 
     if folder_path:
         processing_window = tk.Toplevel()
@@ -53,7 +115,8 @@ def start_processing(folder_entry, date_entry, date_entry_end):
         gif_label = tk.Label(processing_window)
         gif_label.pack(padx=30, pady=30)
 
-        messages = [
+        messages = mensagens_diarias()
+        """[
             "Aguarde um pouco, pegue um café.\n Ou dois.",
             "Estamos quase lá, mais um instante por favor.\n Ou dois. Ou três.",
             "Só um momento, estamos trabalhando nisso.\n Literalmente.",
@@ -70,8 +133,10 @@ def start_processing(folder_entry, date_entry, date_entry_end):
             "Isso pode demorar um pouco.\n Afinal, boa arte leva tempo.",
             "Quase lá. Por favor,\n mantenha as mãos e pés dentro do veículo.",
             "Seu arquivo está quase pronto.\n É uma promessa de programador!",
-            "Enquanto aguarda, que tal um café?\n Pegue um pra mim também!"
-        ]
+            "Estamos quase lá! \n É sempre mais escuro antes do amanhecer.",
+            "Cada segundo que passa,\né um segundo mais perto de estar pronto.",
+            "Sua espera será recompensada!\nPrepare-se para o sucesso!"
+        ]"""
 
         processing_label = tk.Label(processing_window, text=random.choice(messages))
         processing_label.pack(padx=20, pady=20)
@@ -86,15 +151,27 @@ def start_processing(folder_entry, date_entry, date_entry_end):
         messagebox.showwarning("Atenção", "Por favor, escolha um diretório antes de continuar.")
 
 
+def resize_gif_frames(gif, size):
+    resized_frames = []
+    for frame in ImageSequence.Iterator(gif):
+        # Redimensiona cada frame
+        resized_frame = frame.resize(size, Image.LANCZOS)
+        # Converte para PhotoImage e adiciona à lista
+        resized_frames.append(ImageTk.PhotoImage(resized_frame))
+    return resized_frames
+
+
 def process_and_show_message(folder_path, selected_date, selected_date_end, processing_window, processing_label,
                              gif_label, time_label, messages):
-
     # Carregar e exibir o GIF animado
     tempo_inicial = time.time()
     success = [False]
-    gif = Image.open("sonicgif2.gif")
-
-    gif_frames = [ImageTk.PhotoImage(frame) for frame in ImageSequence.Iterator(gif)]
+    #gif = Image.open("sonicgif2.gif")
+    lista = ["sonicgif2.gif","sonic-run.gif"]
+    gif = Image.open("sonic-run.gif")
+    desired_size = (80, 120)
+    # gif_frames = [ImageTk.PhotoImage(frame) for frame in ImageSequence.Iterator(gif)]
+    gif_frames = resize_gif_frames(gif, desired_size)
 
     def update_gif_frame(frame_num):
         if processing_window.winfo_exists():
@@ -146,9 +223,27 @@ def process_and_show_message(folder_path, selected_date, selected_date_end, proc
                                               f"Por favor, verifique o periodo e tente novamente.")
 
         processing_window.destroy()
+
+    except requests.exceptions.ChunkedEncodingError:
+        success[0] = True
+        messagebox.showerror("Erro", "Erro de comunicação: a resposta do servidor foi interrompida inesperadamente.")
+        processing_window.destroy()
+
+    except requests.exceptions.RequestException as e:
+        success[0] = True
+        messagebox.showerror("Erro", f"Ocorreu um erro durante a comunicação: {str(e)}")
+        print(e)
+        processing_window.destroy()
+
     except ValueError as e:
         success[0] = True
-        messagebox.showwarning("Atenção", "Arquivo excel em aberto.\nPor favor, feche e tente novamente.")
+        messagebox.showwarning("Atenção", "Arquivo Excel em aberto.\nPor favor, feche e tente novamente.")
+        processing_window.destroy()
+
+    except Exception as e:
+        success[0] = True
+        messagebox.showerror("Erro", f"Ocorreu um erro inesperado: {str(e)}")
+        print(e)
         processing_window.destroy()
 
 
@@ -174,7 +269,7 @@ def get_date_selected_sql(cal, cal_window, date_entry):
         messagebox.showwarning("Atenção", "Por favor, escolha um período para continuar.")
 
 
-def open_calendar_sql(sql_date_entry):
+"""def open_calendar_sql(sql_date_entry):
     cal_window = tk.Toplevel()
     cal_window.title("Calendário")
     cal_window.iconbitmap('sonic-icon.ico')
@@ -190,7 +285,7 @@ def open_calendar_sql(sql_date_entry):
                                command=confirm_date)
     confirm_button.pack(pady=5)
     cal_window.wait_window()
-
+"""
 
 ## Mapa de Estoque
 
@@ -347,7 +442,7 @@ def main():
     date_entry.grid(row=0, column=1, padx=5, pady=5, sticky="w")
 
     date_entry.config(validate="key")
-    date_entry.bind("<Key>", lambda event: handle_keypress_nohour(event, date_entry))
+    date_entry.bind("<Key>", lambda event: handle_keypress(event, date_entry))
 
     data_label_end = tk.Label(frame_email, text="até")
     data_label_end.grid(row=1, column=0, padx=5, pady=5, sticky="e")
@@ -356,7 +451,7 @@ def main():
     date_entry_end.grid(row=1, column=1, padx=5, pady=5, sticky="w")
 
     date_entry_end.config(validate="key")
-    date_entry_end.bind("<Key>", lambda event: handle_keypress_nohour(event, date_entry_end))
+    date_entry_end.bind("<Key>", lambda event: handle_keypress(event, date_entry_end))
 
     folder_label = tk.Label(frame_email, text="Escolha o diretório:")
     folder_label.grid(row=2, column=0, padx=5, pady=5)
@@ -372,7 +467,7 @@ def main():
 
     start_button = tk.Button(frame_email, text="Começar o processamento",
                              command=lambda: start_processing(folder_entry, date_entry, date_entry_end))
-    start_button.grid(row=3, columnspan=3, padx=5, pady=5)
+    start_button.grid(row=4, columnspan=3, padx=5, pady=5)
 
     # MAPA DE ESTOQUE
     frame_mapa = tk.Frame(notebook)
@@ -397,7 +492,7 @@ def main():
     mapa_date_entry_end.bind("<Key>", lambda event: handle_keypress(event, mapa_date_entry_end))
 
     folder_label = tk.Label(frame_mapa, text="Escolha o diretório:")
-    folder_label.grid(row=2, column=0, padx=5, pady=5)
+    folder_label.grid(row=3, column=0, padx=5, pady=5)
 
     folder_entry_mapa = tk.Entry(frame_mapa, width=50)
     folder_entry_mapa.grid(row=2, column=1, padx=5, pady=5)

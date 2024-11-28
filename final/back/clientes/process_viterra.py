@@ -55,18 +55,26 @@ def process_viterra(message, salve_folder, nf_pdf_map, nf_zip_map):
                         nf.extend(
                             re.finditer(r'REF\.\s+NF\s+n\s+(\d+(?:\s*(?:,\s*|\s+e\s+)?\d+)*)'
                                         r'|NF\s+REFERENCIADA:\s*(\d+)|'
-                                        r'REF.\s+NFe:\s*(\d+)|'
+                                        r'REF.\s+NFe:\s*(\d+)|NOTA\s+FISCAL\s+Nº\s*(\d+)|'
                                         r'Complementar\s+à\s+NF\s+Núm\s+(\d+)|,\s*(\d{4,})\s+de|'
+                                        r'REFERENTE\s+A\s+NF\s*(\d+)|'
                                         #            r'REFERENTE\s+NF\s*((?:\d+\s*/\s*)*\d+)'
                                         r'REFERENTE\s+NF\s+(\d+(?:\s*(?:,\s*|\s+e\s+|\s*/\s*)?\d+)*)'
                                         r'|NFe\s+de\s+N\s+:\s+((?:\d+\s*/\s*)*\d+)|'
-                                        r'notas\s+fiscais:\s*(\d+(?:\s+\d+)*)|'
+                                        r'notas\s+fiscais:\s*(([\d\s,]+)|(\d+(?:\s+\d+)*))|'
+                                        r'NOTA\s+FISCAL\s+N\s+:\s*([\d\s/]+)|'
+                                        r'NOTAS\s+FISCAIS\s+N\s+:\s*([\d\s/]+)|'
+                                        #r'notas\s+fiscais:\s*([\d\s,]+)|'
                                         r'REFERENTE\s+AS\s+NFS\s+(\d+(?:\s*(?:,\s*|\s+E\s+|\s*e\s*|\s*/\s*)?\d+)*)|'
                                         r'NOTA\s+FISCAL\s+NR.\s*(\d+)|'
                                         r'REF.\s+NFe\s+de\s+N\s+:\s*((?:\d+\s*/\s*)*\d+)|'
-                                        r'REF.\s+Nfe:\s*(\d+)', pdf_reader, re.IGNORECASE))
+                                        r'REF.\s+Nfe:\s*(\d+)|(?:COMPLEMENTO\s+REF.\s+NOTA\s+FISCAL)\s*(?:\d+\s*,\s*)?(\d{3,8})'
+                                        r'|COMPLEMENTAR\s*DE\s*QUANTIDADE\s*REF\s*A\s*NF:\s*(\d+(?:\s*(?:,\s*|\s+e\s+|\s*/\s*)?\d+)*)', pdf_reader, re.IGNORECASE))
+
                         if not nf:
                             nf.append(0)
+                        for x in nf:
+                            print(x)
                         for match in nf:
                             if match == 0:
                                 nf_pdf_map[attachment.name] = {
@@ -77,7 +85,7 @@ def process_viterra(message, salve_folder, nf_pdf_map, nf_zip_map):
                                     'serie_nf': 'SEM LEITURA',
                                     'data_emissao': 'SEM LEITURA',
                                     'cnpj': 'SEM LEITURA',
-                                    'nfe': attachment.name,
+                                    'nfe': '0',
                                     'chave_comp': 'SEM LEITURA',
                                     'transportadora': 'VITERRA',
                                     'peso_comp': 'SEM LEITURA',
@@ -143,43 +151,74 @@ def process_viterra(message, salve_folder, nf_pdf_map, nf_zip_map):
                         for i, nota in enumerate(nf):
                             if nota != 0:
                                 notas = None
-                                for i in range(1, 13):
+
+                                for i in range(1, 30):
                                     notas = nota.group(i)
+
                                     if notas is not None:
                                         break
 
                                 notas_split = re.split(r'\s*/\s*|\s*,\s*|\s*e\s*|\s+', notas)
+
                                 for valor in notas_split:
+
                                     if valor != 'E':
-                                        replica_nota.append(valor)
-                                        for match, chave, data, serie, cnpj in zip(nfe_match, chave_comp, data_matches,
-                                                                                   serie_matches, segundo_cnpj):
-                                            datax = None
-                                            if data != 0:
-                                                for i in range(1, 3):
-                                                    datax = data.group(i)
-                                                    if datax is not None:
-                                                        break
-                                            seriex = None
-                                            for i in range(1, 4):
-                                                seriex = serie.group(i)
-                                                if seriex is not None:
-                                                    break
+                                        if valor != '':
+                                            replica_nota.append(valor)
 
-                                            notax = match.group(1)
+                                            for match, chave, data, serie, cnpj in zip(nfe_match, chave_comp, data_matches,
+                                                                                       serie_matches, segundo_cnpj):
 
-                                            chavex = chave.group(1)
-                                            if notax != "0":
-                                                replica_nfe.append(notax)
-                                                replica_subject.append(message.subject)
-                                                replica_chave.append(chavex)
-                                                replica_data.append(datax)
-                                                replica_serie.append(seriex)
-                                                replica_cnpj.append(cnpj)
+                                                datax = None
+                                                if data != 0:
+                                                    for i in range(1, 3):
+                                                        datax = data.group(i)
+                                                        if datax is not None:
+                                                            break
+                                                try:
+                                                    seriex = None
+                                                    if serie and isinstance(serie,re.Match):
+                                                        for i in range(1, 4):
+                                                            try:
+                                                                seriex = serie.group(i)
+                                                                if seriex is not None:
+                                                                    break
+                                                            except IndexError:
+                                                                continue
+                                                    if seriex is None:
+                                                        seriex = 0
+                                                except IndexError:
+                                                    seriex = 0
+
+                                                if match and isinstance(match, re.Match):
+                                                    try:
+                                                        notax = match.group(1)
+
+                                                    except IndexError:
+                                                        notax = 0
+                                                else:
+                                                    notax = 0
+
+                                                if chave and isinstance(chave,re.Match):
+                                                    chavex = chave.group(1)
+                                                else:
+                                                    chavex = 0
+
+                                                if notax != "0":
+
+                                                    replica_nfe.append(notax)
+                                                    replica_subject.append(message.subject)
+                                                    replica_chave.append(chavex)
+                                                    replica_data.append(datax)
+                                                    replica_serie.append(seriex)
+                                                    replica_cnpj.append(cnpj)
 
                         for nota, chave, nfe, serie, cnpj, data in zip(replica_nota, replica_chave, replica_nfe,
                                                                        replica_serie, replica_cnpj, replica_data):
-                            chaves = ''.join(chave.split())
+                            if chave != 0:
+                                chaves = ''.join(chave.split())
+                            else:
+                                chaves = 0
                             cn = cnpj.group(1)
                             cn_tratada = re.sub(r'[./-]', '',
                                                 cn)
@@ -266,7 +305,7 @@ def process_viterra(message, salve_folder, nf_pdf_map, nf_zip_map):
                                                 nf.append(0)
                                             for match in nf:
                                                 if match == 0:
-                                                    nf_zip_map[attachment.name] = {
+                                                    nf_zip_map[file_name] = {
                                                         'nota_fiscal': '0',
                                                         'data_email': message.received,
                                                         'chave_acesso': 'SEM LEITURA',
@@ -274,7 +313,7 @@ def process_viterra(message, salve_folder, nf_pdf_map, nf_zip_map):
                                                         'serie_nf': 'SEM LEITURA',
                                                         'data_emissao': 'SEM LEITURA',
                                                         'cnpj': 'SEM LEITURA',
-                                                        'nfe': attachment.name,
+                                                        'nfe': '0',
                                                         'chave_comp': 'SEM LEITURA',
                                                         'transportadora': 'VITERRA',
                                                         'peso_comp': 'SEM LEITURA',

@@ -174,7 +174,7 @@ def process_ldc(message, save_folder, nf_zip_map):
                                                         'serie_nf': 'SEM LEITURA',
                                                         'data_emissao': 'SEM LEITURA',
                                                         'cnpj': 'SEM LEITURA',
-                                                        'nfe': file_name,
+                                                        'nfe': '0',
                                                         'chave_comp': 'SEM LEITURA',
                                                         'transportadora': 'LDC',
                                                         'peso_comp': 'SEM LEITURA',

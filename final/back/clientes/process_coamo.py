@@ -115,6 +115,7 @@ def process_coamo(message, salve_folder, nf_pdf_map, nf_zip_map):
                         if not data_match:
                             data_match.append(0)
 
+
                         for match, chave, rem, nfe_comp, serie, dta in zip(notas_fiscais, chave_acesso, remessa, nfe,
                                                                            serie_match, data_match):
                             chaves = ''.join(chave.split())
@@ -127,7 +128,7 @@ def process_coamo(message, salve_folder, nf_pdf_map, nf_zip_map):
                                     'serie_nf': 'SEM LEITURA',
                                     'data_emissao': 'SEM LEITURA',
                                     'cnpj': rem,
-                                    'nfe': attachment.name,
+                                    'nfe': '0',
                                     'chave_comp': chaves,
                                     'transportadora': 'COAMO',
                                     'peso_comp': rem,
@@ -219,6 +220,7 @@ def process_coamo(message, salve_folder, nf_pdf_map, nf_zip_map):
                                                         r'(?:NOTA\s+FISCAL\s+)?NR\./SERIE/DATA:\s*(\d{1,3}(?:\.\d{3})*)',
                                                         pdf_text,
                                                         re.IGNORECASE))
+
                                         for match in notas_fiscais:
                                             if match == 0:
                                                 nf_zip_map[attachment.name] = {
@@ -229,7 +231,7 @@ def process_coamo(message, salve_folder, nf_pdf_map, nf_zip_map):
                                                     'serie_nf': 'SEM LEITURA',
                                                     'data_emissao': 'SEM LEITURA',
                                                     'cnpj': 'SEM LEITURA',
-                                                    'nfe': attachment.name,
+                                                    'nfe': '0',
                                                     'chave_comp': 'SEM LEITURA',
                                                     'transportadora': 'COAMO',
                                                     'peso_comp': 'SEM LEITURA',
@@ -326,7 +328,7 @@ def process_coamo(message, salve_folder, nf_pdf_map, nf_zip_map):
                                                 'serie_nf': series,
                                                 'data_emissao': data,
                                                 'cnpj': cnpj_tratado,
-                                                'nfe': nfe_ajust,
+                                                'nfe': nfe_ajust.lstrip('0'),
                                                 'transportadora': 'COAMO',
                                                 'serie_comp': '0',
                                                 'peso_comp': '0'

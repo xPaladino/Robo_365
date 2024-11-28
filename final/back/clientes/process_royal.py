@@ -67,9 +67,9 @@ def process_royal(message, save_folder, nf_pdf_map):
                                     'serie_nf': 'SEM LEITURA',
                                     'data_emissao': 'SEM LEITURA',
                                     'cnpj': 'SEM LEITURA',
-                                    'nfe': attachment.name,
+                                    'nfe': '0',
                                     'chave_comp': 'SEM LEITURA',
-                                    'transportadora': 'CJ',
+                                    'transportadora': 'ROYAL',
                                     'peso_comp': 'SEM LEITURA',
                                     'serie_comp': 'SEM LEITURA'
                                 }
