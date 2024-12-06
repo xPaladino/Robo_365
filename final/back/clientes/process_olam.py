@@ -4,6 +4,8 @@ import base64
 import tempfile
 import zipfile
 from datetime import datetime
+from types import NoneType
+
 import pandas as pd
 from PyPDF2 import PdfReader
 
@@ -137,12 +139,10 @@ def process_olam(message, salve_folder, nf_excel_map):
 
                                         dta_emissao_formatada = dta_emissao.apply(lambda x: datetime.strptime(x, '%Y-%m-%d').strftime('%d/%m/%Y')
                                                                                   if len(x) == 10 and '-' in x else x)
-
-
                                         for nf, chave, chavecomp, notacomp,series, dta in zip(nota_ori, chavenfe_cleaned,
                                                                                   chavecomp_cleaned, nota_comp,serie,
                                                                                   dta_emissao_formatada):
-                                            print(f'teste nf {nf}')
+
                                             chaves = ''.join(chave)
                                             nf_excel_map[nf] = {'nota_fiscal': nf,
                                                                 'data_email': message.received,
@@ -176,7 +176,6 @@ def process_olam(message, salve_folder, nf_excel_map):
                                                                                                    cnpj_origem, nf_comp,
                                                                                                    serie, peso, chave_comp
                                                                                                    ):
-
                                             nf_excel_map[nfo] = {
                                                 'nota_fiscal': nfo,
                                                 'data_email': message.received,

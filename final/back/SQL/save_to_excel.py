@@ -267,10 +267,7 @@ def save_to_excel(nf_pdf_map, nf_zip_map, nf_excel_map, file_name):
         resultados_dict = {str(r[0]): r for r in resultados_excel}
         lancado_dict = {str(s[0]): s for s in resultados_excel_comp}
         for valor, info in nf_excel_map.items():
-
-
             resultado = resultados_dict.get(valor.lstrip('0'),None)
-
             resultado_comp = lancado_dict.get(info['nfe'], None)
             if resultado:
                 datadesc = resultado[8].strftime('%d/%m/%Y %H:%M:%S')
@@ -592,7 +589,6 @@ def conecta_sql(nf_zip_map, nf_pdf_map, nf_excel_map):  # , file_name):
                                ORDER BY
                                    Posicao;
                                """
-
         consulta_excel = f"""
                         WITH ChavesNumeradas AS (
                             SELECT

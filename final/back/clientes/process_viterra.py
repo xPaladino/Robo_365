@@ -73,8 +73,6 @@ def process_viterra(message, salve_folder, nf_pdf_map, nf_zip_map):
 
                         if not nf:
                             nf.append(0)
-                        for x in nf:
-                            print(x)
                         for match in nf:
                             if match == 0:
                                 nf_pdf_map[attachment.name] = {
@@ -151,10 +149,8 @@ def process_viterra(message, salve_folder, nf_pdf_map, nf_zip_map):
                         for i, nota in enumerate(nf):
                             if nota != 0:
                                 notas = None
-
                                 for i in range(1, 30):
                                     notas = nota.group(i)
-
                                     if notas is not None:
                                         break
 
@@ -212,7 +208,11 @@ def process_viterra(message, salve_folder, nf_pdf_map, nf_zip_map):
                                                     replica_data.append(datax)
                                                     replica_serie.append(seriex)
                                                     replica_cnpj.append(cnpj)
+                        vazio = [replica_nota, replica_chave, replica_nfe, replica_serie, replica_cnpj, replica_data]
 
+                        if None in vazio:
+                            print(f'Encontrado vazio em um dos valores da Viterra\n'
+                                  f'Nota: {replica_nota}\n')
                         for nota, chave, nfe, serie, cnpj, data in zip(replica_nota, replica_chave, replica_nfe,
                                                                        replica_serie, replica_cnpj, replica_data):
                             if chave != 0:

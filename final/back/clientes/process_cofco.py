@@ -147,15 +147,7 @@ def process_cofco(message, save_folder, nf_pdf_map):
                                         r'Nº\s*(\d{1,3}.\d{1,3}.\d{1,3})', pdf_reader,
 
                                         re.IGNORECASE))
-                        #Nº 000.155.278
-                        #SÉRIE   1
-                        #DATA DA EMISSÃO
-                        #29.05.2024
 
-                        """FOLHA:
-
-                        000.127
-                        .503"""
                         pdf_reader2 = PdfReader(temp_pdf)
                         pdf_text = ''
                         for page in pdf_reader2.pages:
@@ -189,65 +181,77 @@ def process_cofco(message, save_folder, nf_pdf_map):
                                         r'(?:\d{2}.\d{3}.\d{3}/\d{4}-\d{2}\s+)(\d{2}/\d{2}/\d{2,4})|'
                                         r'(?:\s+EMISSÃO:\s+)(\d{2}/\d{2}/\d{2,4})', pdf_reader, re.IGNORECASE))
 
-                        for nf, comp, nfe, serie, dta_comp in zip(replica_nota, chaves_comp,
-                                                                         nfe_match,
-                                                                         serie_matches, data_emissao):
+                        vazio = [replica_nota, chaves_comp, nfe_match, serie_matches, data_emissao]
 
-                            try:
-                                if comp != 0:
-                                    ch_comp = ''.join(comp.split())
-                                else:
+                        if None in vazio:
+                            print(f'Encontrado vazio em um dos valores da COFCO\n'
+                                  f'Nota: {replica_nota}\n'
+                                  f'NFE: {nfe_match}\n'
+                                  f'Data: {data_emissao}\n'
+                                  f'Chave: {chaves_comp}\n'
+                                  f'Serie: {serie_matches}')
+                            break
+
+                        else:
+                            for nf, comp, nfe, serie, dta_comp in zip(replica_nota, chaves_comp,
+                                                                             nfe_match,
+                                                                             serie_matches, data_emissao):
+
+                                try:
+                                    if comp != 0:
+                                        ch_comp = ''.join(comp.split())
+                                    else:
+                                        ch_comp = 0
+                                except IndexError:
                                     ch_comp = 0
-                            except IndexError:
-                                ch_comp = 0
-                            dta_emissao = 0
-                            try:
-                                if dta_comp != 0:
-                                    for x in range(1, 9):
-                                        data = dta_comp.group(x)
-                                        if data is not None:
-                                            break
-                                    dta_emissao = re.sub(r'[.]', '/', data)
-                            except IndexError:
                                 dta_emissao = 0
+                                try:
+                                    if dta_comp != 0:
+                                        for x in range(1, 9):
+                                            data = dta_comp.group(x)
+                                            if data is not None:
+                                                break
+                                        dta_emissao = re.sub(r'[.]', '/', data)
+                                except IndexError:
+                                    dta_emissao = 0
 
-                            try:
-                                for i in range(0, 6):
-                                    notas = nfe.group(i)
-                                    if notas is not None:
-                                        break
-                                nota_trata = re.sub(r'[\D]', '', notas)
-
-                            except IndexError:
-                                nota_trata = 0
-                            serie_trata = 0
-                            try:
-                                if serie != 0:
-                                    for i in range(1, 8):
-                                        series = serie.group(i)
-                                        if series is not None:
+                                try:
+                                    for i in range(0, 6):
+                                        notas = nfe.group(i)
+                                        if notas is not None:
                                             break
-                                    serie_trata = re.sub(r'[\D]', '', series)
-                            except IndexError:
+                                    nota_trata = re.sub(r'[\D]', '', notas)
+
+                                except IndexError:
+                                    nota_trata = 0
                                 serie_trata = 0
+                                try:
+                                    if serie != 0:
+                                        for i in range(1, 8):
+                                            series = serie.group(i)
+                                            if series is not None:
+                                                break
+                                        serie_trata = re.sub(r'[\D]', '', series)
+                                except IndexError:
+                                    serie_trata = 0
 
-                            for nota in replica_nota:
+                                for nota in replica_nota:
 
-                                nf_pdf_map[nota.lstrip('0')] = {
-                                    'nota_fiscal': nota,
-                                    'chave_acesso': '0',
-                                    'data_email': message.received,
-                                    'email_vinculado': message.subject,
-                                    'serie_nf': serie_trata,
-                                    'serie_comp': '0',
-                                    'data_emissao': dta_emissao,
-                                    'cnpj': cnpj_cofco,
-                                    'nfe': nota_trata.lstrip('0'),
-                                    'chave_comp': ch_comp,
-                                    'transportadora': 'COFCO',
-                                    'peso_comp': '0'
+                                    nf_pdf_map[nota.lstrip('0')] = {
+                                        'nota_fiscal': nota,
+                                        'chave_acesso': '0',
+                                        'data_email': message.received,
+                                        'email_vinculado': message.subject,
+                                        'serie_nf': serie_trata,
+                                        'serie_comp': '0',
+                                        'data_emissao': dta_emissao,
+                                        'cnpj': cnpj_cofco,
+                                        'nfe': nota_trata.lstrip('0'),
+                                        'chave_comp': ch_comp,
+                                        'transportadora': 'COFCO',
+                                        'peso_comp': '0'
 
-                                }
+                                    }
 
 
                     os.remove(temp_pdf.name)

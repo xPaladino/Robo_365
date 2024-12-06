@@ -34,19 +34,13 @@ def process_btg(message, save_folder, nf_zip_map, nf_pdf_map):
                         try:
                             with pd.ExcelFile(temp_xlsx.name, engine='openpyxl') as excel_file:
                                 df = pd.read_excel(excel_file, engine='openpyxl',header=1)
-                                print(df.columns)
 
                         except Exception as e:
                             print(f"erro as {e}")
 
             for attachment in message.attachments:
-
-
-
                 file_extension = os.path.splitext(attachment.name)[1].lower()
                 print(file_extension)
-
-
                 if file_extension == ".zip":
                     decoded_content = base64.b64decode(attachment.content)
                     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -75,6 +69,7 @@ def process_btg(message, save_folder, nf_zip_map, nf_pdf_map):
                                         nfe_comp.extend(
                                             re.finditer(r'SÉRIE(\d+)', pdf_text, re.IGNORECASE)
                                         )
+
                                         if not nfe_comp:
                                             nfe_comp.append(0)
 
@@ -190,74 +185,86 @@ def process_btg(message, save_folder, nf_zip_map, nf_pdf_map):
 
                                             replica_chave = [''.join(chave.split()) for chave in replica_chave]
 
-                                        for match_nf, match_nf2, nfe_comp, chave, serie_comp in zip(notas_fiscais, notas_fiscais,
-                                                                                        replica_nfe, replica_chave,replica_serie):
+                                        vazio = [notas_fiscais, replica_nfe, replica_chave, replica_serie,
+                                                 replica_nfe]
 
-                                            data = match_nf2.group(1)
-                                            notas = match_nf.group(2)
-                                            if notas is None:
-                                                notas = match_nf.group(3)
-                                            if notas is not None:
-                                                if '\n' in notas:
-                                                    nf_ajust = notas.replace('\n', '').replace(' ', '')
+                                        if None in vazio:
+                                            print(f'Encontrado vazio em um dos valores\n'
+                                                  f'Nota: {notas_fiscais}\n'
+                                                  f'NFE: {replica_nfe}\n'
+                                                  f'Data: {notas_fiscais}\n'
+                                                  f'Chave: {replica_chave}\n'
+                                                  f'Serie: {replica_serie}')
+                                            break
+                                        else:
+                                            for match_nf, match_nf2, nfe_comp, chave, serie_comp in zip(notas_fiscais, notas_fiscais,
+                                                                                            replica_nfe, replica_chave,replica_serie):
 
-                                                    nf_split = nf_ajust.split(',')
-                                                    #nota_split = [nota.strip() for nota in notas.split(',')]
-                                                    for valor in nf_split:
+                                                data = match_nf2.group(1)
+                                                notas = match_nf.group(2)
+                                                if notas is None:
+                                                    notas = match_nf.group(3)
+                                                if notas is not None:
+                                                    if '\n' in notas:
+                                                        nf_ajust = notas.replace('\n', '').replace(' ', '')
 
-                                                        nota_sem_hifen = re.findall(r'\b(\d+)-\d+\b', valor)
-                                                        nota_sem_hifen_str = ', '.join(nota_sem_hifen)
-                                                        serie = re.findall(r'-(\d+)\b', valor)
-                                                        serie_str = ', '.join(serie)
-                                                        #print(f'{valor}\n{nota_sem_hifen_str}')
-                                                        nf_zip_map[nota_sem_hifen_str] = {
-                                                            'nota_fiscal': nota_sem_hifen_str,
-                                                            'data_email': message.received,
-                                                            'email_vinculado': message.subject,
-                                                            'data_emissao': data,
-                                                            'cnpj': cnpj_btg,
-                                                            'chave_comp': chave,
-                                                            'chave_acesso': '',
-                                                            'nfe': nfe_comp,
-                                                            'serie_nf': serie_comp,
-                                                            'transportadora': 'BTG',
-                                                            'serie_comp': '0',
-                                                            'peso_comp': '0'
-                                                        }
-                                            else:
-                                                try:
-                                                    for x in range(1, 10):
-                                                        nf = match_nf.group(x)
-                                                        if nf is not None:
-                                                            break
+                                                        nf_split = nf_ajust.split(',')
+                                                        #nota_split = [nota.strip() for nota in notas.split(',')]
+                                                        for valor in nf_split:
 
-                                                except IndexError:
-                                                    nf = 0
-                                                for data in data_matches:
-                                                    if data != 0:
-                                                        try:
-                                                            for x in range(1, 6):
-                                                                data_emissao = data.group(x)
-                                                                if data_emissao is not None:
-                                                                    break
-                                                        except IndexError:
+                                                            nota_sem_hifen = re.findall(r'\b(\d+)-\d+\b', valor)
+                                                            nota_sem_hifen_str = ', '.join(nota_sem_hifen)
+                                                            serie = re.findall(r'-(\d+)\b', valor)
+                                                            serie_str = ', '.join(serie)
+                                                            #print(f'{valor}\n{nota_sem_hifen_str}')
+                                                            nf_zip_map[nota_sem_hifen_str] = {
+                                                                'nota_fiscal': nota_sem_hifen_str,
+                                                                'data_email': message.received,
+                                                                'email_vinculado': message.subject,
+                                                                'data_emissao': data,
+                                                                'cnpj': cnpj_btg,
+                                                                'chave_comp': chave,
+                                                                'chave_acesso': '',
+                                                                'nfe': nfe_comp,
+                                                                'serie_nf': serie_comp,
+                                                                'transportadora': 'BTG',
+                                                                'serie_comp': '0',
+                                                                'peso_comp': '0'
+                                                            }
+                                                else:
+                                                    try:
+                                                        for x in range(1, 10):
+                                                            nf = match_nf.group(x)
+                                                            if nf is not None:
+                                                                break
 
-                                                            data_emissao = 0
+                                                    except IndexError:
+                                                        nf = 0
+                                                    for data in data_matches:
+                                                        if data != 0:
+                                                            try:
+                                                                for x in range(1, 6):
+                                                                    data_emissao = data.group(x)
+                                                                    if data_emissao is not None:
+                                                                        break
+                                                            except IndexError:
 
-                                                nf_zip_map[nf] = {
-                                                    'nota_fiscal': nf,
-                                                    'data_email': message.received,
-                                                    'email_vinculado': message.subject,
-                                                    'data_emissao': data_emissao,
-                                                    'cnpj': cnpj_btg,
-                                                    'chave_comp': chave,
-                                                    'chave_acesso': '',
-                                                    'nfe': nfe_comp,
-                                                    'serie_nf': serie_comp,
-                                                    'transportadora': 'BTG',
-                                                    'serie_comp': '0',
-                                                    'peso_comp': '0'
-                                                }
+                                                                data_emissao = 0
+
+                                                    nf_zip_map[nf] = {
+                                                        'nota_fiscal': nf,
+                                                        'data_email': message.received,
+                                                        'email_vinculado': message.subject,
+                                                        'data_emissao': data_emissao,
+                                                        'cnpj': cnpj_btg,
+                                                        'chave_comp': chave,
+                                                        'chave_acesso': '',
+                                                        'nfe': nfe_comp,
+                                                        'serie_nf': serie_comp,
+                                                        'transportadora': 'BTG',
+                                                        'serie_comp': '0',
+                                                        'peso_comp': '0'
+                                                    }
 
 
 
@@ -288,6 +295,7 @@ def process_btg(message, save_folder, nf_zip_map, nf_pdf_map):
                                               r'REFERENTE\s+AS\s+NF-e\s+(\d+(?:\s*(?:,\s*|\s+E\s+|\s*e\s*|\s*/\s*)?\d+)*)|'
                                               r'EXPORTACAO\s+NFE:(\d+)|'
                                               r'REF\s+NFS\s+(\d+(?:\s*(?:,\s*|\s+E\s+|\s*e\s*|-|\s*/\s*)?\d+)*)|'
+                                              r'REF\s*A\s*NF\s*(\d+)|'
                                               # r'notas\s+fiscais:\s*([\d\s,]+)|'
                                               r'REFERENTE\s+AS\s+NFS\s+(\d+(?:\s*(?:,\s*|\s+E\s+|\s*e\s*|\s*/\s*)?\d+)*)|'
                                               r'NOTA\s+FISCAL\s+NR.\s*(\d+)|'
@@ -297,6 +305,7 @@ def process_btg(message, save_folder, nf_zip_map, nf_pdf_map):
                                               pdf_reader, re.IGNORECASE))
                         if not notas_fiscais:
                             notas_fiscais.append(0)
+                        print(notas_fiscais)
                         chave_comp = []
                         chave_comp.extend(
                             re.finditer(
@@ -336,82 +345,84 @@ def process_btg(message, save_folder, nf_zip_map, nf_pdf_map):
                         if not serie_matches:
                             serie_matches.append(0)
 
-                        cnpj_btg = '14796754000961'
-                        for i, nota in enumerate(notas_fiscais):
+                        vazio = [notas_fiscais, chave_comp, nfe_comp, data_matches, serie_matches]
 
-                            if nota != 0:
-                                notas = None
+                        if None in vazio:
+                            print(f'Encontrado vazio em um dos valores\n'
+                                  f'Nota: {notas_fiscais}\n'
+                                  f'NFE: {nfe_comp}\n'
+                                  f'Data: {data_matches}\n'
+                                  f'Chave: {replica_chave}\n'
+                                  f'Serie: {serie_matches}')
+                            break
+                        else:
+                            cnpj_btg = '14796754000961'
+                            for i, nota in enumerate(notas_fiscais):
 
-                                for i in range(1, 30):
-                                    notas = nota.group(i)
+                                if nota != 0:
+                                    notas = None
 
-                                    if notas is not None:
-                                        break
+                                    for i in range(1, 40):
+                                        notas = nota.group(i)
 
-                                for chave, nfe, data, serie in zip(chave_comp,nfe_comp,data_matches,serie_matches):
-                                    print(f'teste {notas} -{chave}, {nfe}, {data}, {serie}')
+                                        if notas is not None:
+                                            break
 
-                        #for nf, chave, nfe, data, serie in zip(notas_fiscais,chave_comp,nfe_comp,data_matches,serie_matches):
 
-                                    if chave != 0 and isinstance(chave,
-                                                                 re.Match):
-                                        chaves = None
-                                        for i in range(1, 4):
-                                            chaves = chave.group(i)
-                                            if chaves is not None:
-                                                break
-                                        chave_ajustada = ''.join(chaves.split()) if chaves else '0'
-                                    else:
-                                        chave_ajustada = '0'
+                                    for chave, nfe, data, serie in zip(chave_comp,nfe_comp,data_matches,serie_matches):
 
-                                    if nfe != 0:
-                                        try:
-                                            for i in range(1, 5):
-                                                nfe_ajust = nfe.group(i)
-                                                if nfe_ajust is not None:
+                                        if chave != 0 and isinstance(chave,
+                                                                     re.Match):
+                                            chaves = None
+                                            for i in range(1, 4):
+                                                chaves = chave.group(i)
+                                                if chaves is not None:
                                                     break
+                                            chave_ajustada = ''.join(chaves.split()) if chaves else '0'
+                                        else:
+                                            chave_ajustada = '0'
 
-                                            nfe_split = re.sub(r'[\D]', '', nfe_ajust)
-                                        except IndexError:
-                                            nfe_split = 0
+                                        if nfe != 0:
+                                            try:
+                                                for i in range(1, 5):
+                                                    nfe_ajust = nfe.group(i)
+                                                    if nfe_ajust is not None:
+                                                        break
 
-                                    if data != 0:
-                                        try:
-                                            for x in range(1, 4):
-                                                data_emissao = data.group(x)
-                                                if data_emissao is not None:
-                                                    break
-                                        except IndexError:
+                                                nfe_split = re.sub(r'[\D]', '', nfe_ajust)
+                                            except IndexError:
+                                                nfe_split = 0
 
-                                            data_emissao = 0
-                                    if serie != 0:
-                                        try:
-                                            for i in range(1, 8):
-                                                series = serie.group(i)
-                                                if series is not None:
-                                                    break
-                                            serie_split = re.sub(r'[\D]', '', series)
-                                        except IndexError:
+                                        if data != 0:
+                                            try:
+                                                for x in range(1, 4):
+                                                    data_emissao = data.group(x)
+                                                    if data_emissao is not None:
+                                                        break
+                                            except IndexError:
 
-                                            serie_split = 0
-                                    """if nf != 0:
-                                        try:
-                                            for i in range(1, 30):
-                                                notas = nf.group(i)
-                                                if notas is not None:
-                                                    break
-                                        except IndexError:
-                                            notas = 0"""
-                                    nf_pdf_map[notas] = {'nota_fiscal': notas,
-                                                        'data_email': message.received,
-                                                        'data_emissao': data_emissao,
-                                                        'chave_comp': chave_ajustada,
-                                                        'serie_nf': serie_split,
-                                                        'cnpj': cnpj_btg,
-                                                        'nfe': nfe_split,
-                                                        'email_vinculado': message.subject,
-                                                        'transportadora': 'BTG',
-                                                        'peso_comp': '0',
-                                                        'serie_comp': '0'
-                                                        }
+                                                data_emissao = 0
+                                        if serie != 0:
+                                            try:
+                                                for i in range(1, 8):
+                                                    series = serie.group(i)
+                                                    if series is not None:
+                                                        break
+                                                serie_split = re.sub(r'[\D]', '', series)
+                                            except IndexError:
+
+                                                serie_split = 0
+
+                                        nf_pdf_map[notas] = {'nota_fiscal': notas,
+                                                            'data_email': message.received,
+                                                            'data_emissao': data_emissao,
+                                                            'chave_comp': chave_ajustada,
+                                                            'serie_nf': serie_split,
+                                                            'cnpj': cnpj_btg,
+                                                            'nfe': nfe_split,
+                                                            'email_vinculado': message.subject,
+                                                            'transportadora': 'BTG',
+                                                            'peso_comp': '0',
+                                                            'serie_comp': '0'
+                                                            }
                     os.remove(temp_pdf_path)

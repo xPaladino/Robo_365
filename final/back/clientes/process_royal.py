@@ -125,67 +125,78 @@ def process_royal(message, save_folder, nf_pdf_map):
                                 segundo_cnpj.append(cnpj_match[1])
                         if not segundo_cnpj:
                             segundo_cnpj.append(0)
+                        vazio = [notas_fiscais, chave_acesso_match, serie_matches, data_matches, segundo_cnpj, nfe_match, chave_comp]
+                        if None in vazio:
+                            print(f'Encontrado vazio em um dos valores da Royal\n'
+                                  f'Nota: {notas_fiscais}\n'
+                                  f'NFE: {nfe_match}\n'
+                                  f'Data: {data_matches}\n'
+                                  f'Chave1: {chave_acesso_match}\n'
+                                  f'Chave2: {chave_comp}\n'
+                                  f'Serie: {serie_matches}\n'
+                                  f'CNPJ: {segundo_cnpj}\n')
+                            break
+                        else:
+                            for nf, chaves, serie_match, data_match, cnpj, nfe, chv_comp in zip(notas_fiscais, chave_acesso_match,
+                                                                                      serie_matches, data_matches,
+                                                                                      segundo_cnpj, nfe_match,chave_comp):
 
-                        for nf, chaves, serie_match, data_match, cnpj, nfe, chv_comp in zip(notas_fiscais, chave_acesso_match,
-                                                                                  serie_matches, data_matches,
-                                                                                  segundo_cnpj, nfe_match,chave_comp):
+                                if nf != 0:
+                                    if nf.group(1) == '73077':
+                                        pass
+                                    else:
+                                        try:
+                                            for x in range(1, 10):
+                                                nf_ajust = nf.group(x)
+                                                if nf_ajust is not None:
+                                                    break
+                                            nf_formatado = nf_ajust.replace(' ', '')
+                                        except IndexError:
+                                            nf_formatado = 0
 
-                            if nf != 0:
-                                if nf.group(1) == '73077':
-                                    pass
-                                else:
-                                    try:
-                                        for x in range(1, 10):
-                                            nf_ajust = nf.group(x)
-                                            if nf_ajust is not None:
-                                                break
-                                        nf_formatado = nf_ajust.replace(' ', '')
-                                    except IndexError:
-                                        nf_formatado = 0
+                                        try:
+                                            for x in range(1, 5):
+                                                data_ajust = data_match.group(x)
+                                                if data_ajust is not None:
+                                                    break
+                                            data_emissao = data_ajust.replace('.', '/') if data_match else '0'
+                                        except IndexError:
+                                            data_emissao = 0
 
-                                    try:
-                                        for x in range(1, 5):
-                                            data_ajust = data_match.group(x)
-                                            if data_ajust is not None:
-                                                break
-                                        data_emissao = data_ajust.replace('.', '/') if data_match else '0'
-                                    except IndexError:
-                                        data_emissao = 0
+                                        try:
+                                            for x in range(1, 6):
+                                                serie = serie_match.group(x)
+                                                if serie is not None:
+                                                    break
+                                        except IndexError:
+                                            serie = 0
 
-                                    try:
-                                        for x in range(1, 6):
-                                            serie = serie_match.group(x)
-                                            if serie is not None:
-                                                break
-                                    except IndexError:
-                                        serie = 0
+                                        try:
+                                            chave_trat = ''.join(chaves.split())
+                                        except IndexError:
+                                            chave_trat = 0
 
-                                    try:
-                                        chave_trat = ''.join(chaves.split())
-                                    except IndexError:
-                                        chave_trat = 0
-
-                                    try:
-                                        for x in range(1, 5):
-                                            comp_nota = nfe.group(x)
-                                            if comp_nota is not None:
-                                                break
-                                        nota_comp = comp_nota.replace('.', '')
-                                    except IndexError:
-                                        nota_comp = 0
-                                    cnpj_royal = '01655275000983'
-                                    nf_pdf_map[nf_formatado] = {
-                                        'nota_fiscal': nf_formatado,
-                                        'data_email': message.received,
-                                        'chave_acesso': '0',
-                                        'email_vinculado': message.subject,
-                                        'serie_nf': serie,
-                                        'data_emissao': data_emissao,
-                                        'cnpj': cnpj_royal,
-                                        'nfe': nota_comp,
-                                        'chave_comp': chave_trat,
-                                        'transportadora': 'ADM',
-                                        'peso_comp': '0',
-                                        'serie_comp': '0'
-                                    }
+                                        try:
+                                            for x in range(1, 5):
+                                                comp_nota = nfe.group(x)
+                                                if comp_nota is not None:
+                                                    break
+                                            nota_comp = comp_nota.replace('.', '')
+                                        except IndexError:
+                                            nota_comp = 0
+                                        cnpj_royal = '01655275000983'
+                                        nf_pdf_map[nf_formatado] = {
+                                            'nota_fiscal': nf_formatado,
+                                            'data_email': message.received,
+                                            'chave_acesso': '0',
+                                            'email_vinculado': message.subject,
+                                            'serie_nf': serie,
+                                            'data_emissao': data_emissao,
+                                            'cnpj': cnpj_royal,
+                                            'nfe': nota_comp,
+                                            'chave_comp': chave_trat,
+                                            'transportadora': 'ADM',
+                                            'peso_comp': '0',
+                                            'serie_comp': '0'
+                                        }
                     os.remove(temp_pdf.name)

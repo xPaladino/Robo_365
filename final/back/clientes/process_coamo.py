@@ -115,75 +115,84 @@ def process_coamo(message, salve_folder, nf_pdf_map, nf_zip_map):
                         if not data_match:
                             data_match.append(0)
 
+                        vazio = [notas_fiscais, chave_acesso, nfe, serie_match, data_match]
+                        if None in vazio:
+                            print(f'Encontrado vazio em um dos valores da COAMO\n'
+                                  f'Nota: {notas_fiscais}\n'
+                                  f'NFE: {nfe}\n'
+                                  f'Data: {data_match}\n'
+                                  f'Chave: {chave_acesso}\n'
+                                  f'Serie: {serie_match}\n')
+                            break
+                        else:
+                            for match, chave, rem, nfe_comp, serie, dta in zip(notas_fiscais, chave_acesso, remessa, nfe,
+                                                                               serie_match, data_match):
+                                chaves = ''.join(chave.split())
+                                if match == 0:
+                                    nf_pdf_map[attachment.name] = {
+                                        'nota_fiscal': '0',
+                                        'data_email': message.received,
+                                        'chave_acesso': '0',
+                                        'email_vinculado': message.subject,
+                                        'serie_nf': 'SEM LEITURA',
+                                        'data_emissao': 'SEM LEITURA',
+                                        'cnpj': rem,
+                                        'nfe': '0',
+                                        'chave_comp': chaves,
+                                        'transportadora': 'COAMO',
+                                        'peso_comp': rem,
+                                        'serie_comp': rem
+                                    }
 
-                        for match, chave, rem, nfe_comp, serie, dta in zip(notas_fiscais, chave_acesso, remessa, nfe,
-                                                                           serie_match, data_match):
-                            chaves = ''.join(chave.split())
-                            if match == 0:
-                                nf_pdf_map[attachment.name] = {
-                                    'nota_fiscal': '0',
-                                    'data_email': message.received,
-                                    'chave_acesso': '0',
-                                    'email_vinculado': message.subject,
-                                    'serie_nf': 'SEM LEITURA',
-                                    'data_emissao': 'SEM LEITURA',
-                                    'cnpj': rem,
-                                    'nfe': '0',
-                                    'chave_comp': chaves,
-                                    'transportadora': 'COAMO',
-                                    'peso_comp': rem,
-                                    'serie_comp': rem
-                                }
+                                else:
+                                    try:
+                                        if isinstance(nfe_comp.group(0), str):
+                                            padraonfe = nfe_comp.group(0)
+                                            nfe_pont = re.sub(r'[.]', '', padraonfe)
+                                            nfe_ajust = nfe_pont if nfe_pont[0:3] != '000' else nfe_pont[3:]
+                                    except IndexError:
+                                        nfe_ajust = 0
 
-                            else:
-                                try:
-                                    if isinstance(nfe_comp.group(0), str):
-                                        padraonfe = nfe_comp.group(0)
-                                        nfe_pont = re.sub(r'[.]', '', padraonfe)
-                                        nfe_ajust = nfe_pont if nfe_pont[0:3] != '000' else nfe_pont[3:]
-                                except IndexError:
-                                    nfe_ajust = 0
+                                    try:
+                                        if dta != 0:
+                                            for i in range(1, 3):
+                                                data = dta.group(i)
+                                                if data is not None:
+                                                    break
+                                    except IndexError:
+                                        data = 0
 
-                                try:
-                                    if dta != 0:
-                                        for i in range(1, 3):
-                                            data = dta.group(i)
-                                            if data is not None:
+                                    try:
+                                        for x in range(1, 10):
+                                            nota = match.group(x)
+                                            if nota is not None:
                                                 break
-                                except IndexError:
-                                    data = 0
+                                        ajust = nota.replace('.', '')
+                                    except IndexError:
+                                        ajust = 0
 
-                                try:
-                                    for x in range(1, 10):
-                                        nota = match.group(x)
-                                        if nota is not None:
-                                            break
-                                    ajust = nota.replace('.', '')
-                                except IndexError:
-                                    ajust = 0
-
-                                try:
-                                    for i in range(1, 4):
-                                        series = serie.group(i)
-                                        if series is not None:
-                                            break
-                                except IndexError:
-                                    series = 0
-                                cpnj_coamo = '75904383024810'
-                                nf_pdf_map[ajust] = {
-                                    'nota_fiscal': ajust,
-                                    'data_email': message.received,
-                                    'chave_acesso': '0',
-                                    'email_vinculado': message.subject,
-                                    'serie_nf': series,
-                                    'data_emissao': data,
-                                    'cnpj': cpnj_coamo,
-                                    'nfe': nfe_ajust,
-                                    'chave_comp': chaves,
-                                    'transportadora': 'COAMO',
-                                    'peso_comp': '0',
-                                    'serie_comp': '0'
-                                }
+                                    try:
+                                        for i in range(1, 4):
+                                            series = serie.group(i)
+                                            if series is not None:
+                                                break
+                                    except IndexError:
+                                        series = 0
+                                    cpnj_coamo = '75904383024810'
+                                    nf_pdf_map[ajust] = {
+                                        'nota_fiscal': ajust,
+                                        'data_email': message.received,
+                                        'chave_acesso': '0',
+                                        'email_vinculado': message.subject,
+                                        'serie_nf': series,
+                                        'data_emissao': data,
+                                        'cnpj': cpnj_coamo,
+                                        'nfe': nfe_ajust,
+                                        'chave_comp': chaves,
+                                        'transportadora': 'COAMO',
+                                        'peso_comp': '0',
+                                        'serie_comp': '0'
+                                    }
 
                     os.remove(temp_pdf_path)
                 if file_extension == ".zip":
@@ -287,49 +296,59 @@ def process_coamo(message, salve_folder, nf_pdf_map, nf_zip_map):
                                                             break
                                                     ajust = notas.replace('.', '')
                                                     replica_nota.append(ajust)
-
-                                        for nf, nfe, chave, cnpj, serie, datas in zip(replica_nota, nfe_match,
-                                                                                      chave_acesso_match, segundo_cnpj,
-                                                                                      serie_matches, data_matches):
-                                            try:
-                                                if isinstance(nfe.group(0), str):
-                                                    padraonfe = nfe.group(0)
-                                                    nfe_pont = re.sub(r'[.]', '', padraonfe)
-                                                    nfe_ajust = nfe_pont if nfe_pont[0:3] != '000' else nfe_pont[3:]
-                                            except IndexError:
-                                                nfe_ajust = 0
-                                            try:
-                                                if datas != 0:
-                                                    for i in range(1, 3):
-                                                        data = datas.group(i)
-                                                        if data is not None:
+                                        vazio = [replica_nota, nfe_match, chave_acesso_match, segundo_cnpj, serie_matches, data_matches]
+                                        if None in vazio:
+                                            print(f'Encontrado vazio em um dos valores da COAMO\n'
+                                                  f'Nota: {replica_nota}\n'
+                                                  f'NFE: {nfe_match}\n'
+                                                  f'Data: {data_matches}\n'
+                                                  f'Chave: {chave_acesso_match}\n'
+                                                  f'Serie: {serie_matches}\n'
+                                                  f'CNPJ: {segundo_cnpj}')
+                                            break
+                                        else:
+                                            for nf, nfe, chave, cnpj, serie, datas in zip(replica_nota, nfe_match,
+                                                                                          chave_acesso_match, segundo_cnpj,
+                                                                                          serie_matches, data_matches):
+                                                try:
+                                                    if isinstance(nfe.group(0), str):
+                                                        padraonfe = nfe.group(0)
+                                                        nfe_pont = re.sub(r'[.]', '', padraonfe)
+                                                        nfe_ajust = nfe_pont if nfe_pont[0:3] != '000' else nfe_pont[3:]
+                                                except IndexError:
+                                                    nfe_ajust = 0
+                                                try:
+                                                    if datas != 0:
+                                                        for i in range(1, 3):
+                                                            data = datas.group(i)
+                                                            if data is not None:
+                                                                break
+                                                except IndexError:
+                                                    data = 0
+                                                try:
+                                                    chaves = ''.join(chave.split())
+                                                    cnpj_tratado = re.sub(r'[./-]', '', cnpj.group(1))
+                                                except:
+                                                    cnpj_tratado = '75904383024810'
+                                                try:
+                                                    for i in range(1, 4):
+                                                        series = serie.group(i)
+                                                        if series is not None:
                                                             break
-                                            except IndexError:
-                                                data = 0
-                                            try:
-                                                chaves = ''.join(chave.split())
-                                                cnpj_tratado = re.sub(r'[./-]', '', cnpj.group(1))
-                                            except:
-                                                cnpj_tratado = '75904383024810'
-                                            try:
-                                                for i in range(1, 4):
-                                                    series = serie.group(i)
-                                                    if series is not None:
-                                                        break
-                                            except:
-                                                series = 0
+                                                except:
+                                                    series = 0
 
-                                            nf_zip_map[nf] = {
-                                                'nota_fiscal': nf,
-                                                'data_email': message.received,
-                                                'chave_comp': chaves,
-                                                'chave_acesso': '0',
-                                                'email_vinculado': message.subject,
-                                                'serie_nf': series,
-                                                'data_emissao': data,
-                                                'cnpj': cnpj_tratado,
-                                                'nfe': nfe_ajust.lstrip('0'),
-                                                'transportadora': 'COAMO',
-                                                'serie_comp': '0',
-                                                'peso_comp': '0'
-                                            }
+                                                nf_zip_map[nf] = {
+                                                    'nota_fiscal': nf,
+                                                    'data_email': message.received,
+                                                    'chave_comp': chaves,
+                                                    'chave_acesso': '0',
+                                                    'email_vinculado': message.subject,
+                                                    'serie_nf': series,
+                                                    'data_emissao': data,
+                                                    'cnpj': cnpj_tratado,
+                                                    'nfe': nfe_ajust.lstrip('0'),
+                                                    'transportadora': 'COAMO',
+                                                    'serie_comp': '0',
+                                                    'peso_comp': '0'
+                                                }

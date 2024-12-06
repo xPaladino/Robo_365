@@ -120,122 +120,135 @@ def process_chs(message, save_folder, nf_pdf_map, nf_zip_map):
                         if not segundo_cnpj:
                             segundo_cnpj.append(0)
 
-                        for nf, chave, serie, cnpj, nfe, dta_comp in zip(notas_fiscais, chave_comp, serie_matches, segundo_cnpj,
-                                                               nfe_match, data_matches):
-                            cn = cnpj.group(1)
-                            cnpj_trata = re.sub(r'[./-]', '', cn)
-                            nota = []
-                            for i in notas_fiscais:
-                                if i != 0:
-                                    try:
-                                        if i != 'e':
-                                            notas = None
-                                            for x in range(1, 11):
-                                                notas = i.group(x)
-                                                if notas is not None:
+                        vazio = [notas_fiscais, chave_comp, serie_matches, segundo_cnpj, nfe_match,data_matches]
+                        print(vazio)
+                        if None in vazio:
+                            print(f'Encontrado vazio em um dos valores\n'
+                                  f'Nota: {notas_fiscais}\n'
+                                  f'NFE: {nfe_match}\n'
+                                  f'Data: {data_matches}\n'
+                                  f'Chave: {chave_comp}\n'
+                                  f'Serie: {serie_matches}\n'
+                                  f'CNPJ: {segundo_cnpj}')
+                            break
+                        else:
+
+                            for nf, chave, serie, cnpj, nfe, dta_comp in zip(notas_fiscais, chave_comp, serie_matches, segundo_cnpj,
+                                                                   nfe_match, data_matches):
+                                cn = cnpj.group(1)
+                                cnpj_trata = re.sub(r'[./-]', '', cn)
+                                nota = []
+                                for i in notas_fiscais:
+                                    if i != 0:
+                                        try:
+                                            if i != 'e':
+                                                notas = None
+                                                for x in range(1, 11):
+                                                    notas = i.group(x)
+                                                    if notas is not None:
+                                                        break
+                                                nota_trata = re.sub(r'[\D]', '', notas)
+                                                nota.append(nota_trata)
+                                        except IndexError:
+                                            nota_trata = 0
+                                        try:
+                                            for d in range(1, 4):
+                                                data_comp = dta_comp.group(d)
+                                                if data_comp is not None:
                                                     break
-                                            nota_trata = re.sub(r'[\D]', '', notas)
-                                            nota.append(nota_trata)
-                                    except IndexError:
-                                        nota_trata = 0
-                                    try:
-                                        for d in range(1, 4):
-                                            data_comp = dta_comp.group(d)
-                                            if data_comp is not None:
-                                                break
-                                    except IndexError:
-                                        data_comp = 0
+                                        except IndexError:
+                                            data_comp = 0
 
-                                    try:
-                                        for c in range(0, 2):
-                                            chave_comp = chave.group(c)
-                                            if chave_comp is not None:
-                                                break
-                                        chave_trata = re.sub(r'[\D]', '', chave_comp)
-                                    except IndexError:
-                                        chave_trata = 0
+                                        try:
+                                            for c in range(0, 2):
+                                                chave_comp = chave.group(c)
+                                                if chave_comp is not None:
+                                                    break
+                                            chave_trata = re.sub(r'[\D]', '', chave_comp)
+                                        except IndexError:
+                                            chave_trata = 0
 
-                                    try:
-                                        for s in range(0, 2):
-                                            serie_comp = serie.group(s)
-                                            if serie_comp is not None:
-                                                break
-                                        serie_trata = re.sub(r'[\D]', '', serie_comp)
-                                    except IndexError:
-                                        serie_trata = 0
+                                        try:
+                                            for s in range(0, 2):
+                                                serie_comp = serie.group(s)
+                                                if serie_comp is not None:
+                                                    break
+                                            serie_trata = re.sub(r'[\D]', '', serie_comp)
+                                        except IndexError:
+                                            serie_trata = 0
 
-                                    try:
-                                        nfe_formatado = nfe.group(1)
-                                        nfe_semponto = nfe_formatado.replace('.', '')
-                                        nfe_semzero = nfe_semponto if nfe_semponto[
-                                                                      0:3] != '000' else nfe_semponto[3:]
-                                    except IndexError:
-                                        nfe_semzero = 0
+                                        try:
+                                            nfe_formatado = nfe.group(1)
+                                            nfe_semponto = nfe_formatado.replace('.', '')
+                                            nfe_semzero = nfe_semponto if nfe_semponto[
+                                                                          0:3] != '000' else nfe_semponto[3:]
+                                        except IndexError:
+                                            nfe_semzero = 0
 
-                                if i == 0:
-                                    try:
-                                        for d in range(1, 4):
-                                            data_comp = dta_comp.group(d)
-                                            if data_comp is not None:
-                                                break
-                                    except IndexError:
-                                        data_comp = 0
+                                    if i == 0:
+                                        try:
+                                            for d in range(1, 4):
+                                                data_comp = dta_comp.group(d)
+                                                if data_comp is not None:
+                                                    break
+                                        except IndexError:
+                                            data_comp = 0
 
-                                    try:
-                                        for c in range(0, 2):
-                                            chave_comp = chave.group(c)
-                                            if chave_comp is not None:
-                                                break
-                                        chave_trata = re.sub(r'[\D]', '', chave_comp)
-                                    except IndexError:
-                                        chave_trata = 0
+                                        try:
+                                            for c in range(0, 2):
+                                                chave_comp = chave.group(c)
+                                                if chave_comp is not None:
+                                                    break
+                                            chave_trata = re.sub(r'[\D]', '', chave_comp)
+                                        except IndexError:
+                                            chave_trata = 0
 
-                                    try:
-                                        for s in range(0, 2):
-                                            serie_comp = serie.group(s)
-                                            if serie_comp is not None:
-                                                break
-                                        serie_trata = re.sub(r'[\D]', '', serie_comp)
-                                    except IndexError:
-                                        serie_trata = 0
+                                        try:
+                                            for s in range(0, 2):
+                                                serie_comp = serie.group(s)
+                                                if serie_comp is not None:
+                                                    break
+                                            serie_trata = re.sub(r'[\D]', '', serie_comp)
+                                        except IndexError:
+                                            serie_trata = 0
 
-                                    try:
-                                        nfe_formatado = nfe.group(1)
-                                        nfe_semponto = nfe_formatado.replace('.', '')
-                                        nfe_semzero = nfe_semponto if nfe_semponto[
-                                                                      0:3] != '000' else nfe_semponto[3:]
-                                    except IndexError:
-                                        nfe_semzero = 0
-                                    nf_pdf_map[attachment.name] = {
-                                        'nota_fiscal': '0',
-                                        'data_email': message.received,
-                                        'chave_acesso': chave_trata,
-                                        'email_vinculado': message.subject,
-                                        'serie_nf': serie_trata,
-                                        'data_emissao': data_comp,
-                                        'cnpj': cnpj_trata,
-                                        'nfe': nfe_semzero.lstrip('0'),
-                                        'chave_comp': chave_trata,
-                                        'transportadora': 'CHS',
-                                        'peso_comp': 'SEM LEITURA',
-                                        'serie_comp': 'SEM LEITURA'
-                                    }
-                                    print('zerado')
-                                else:
-                                    nf_pdf_map[nota_trata.lstrip('0')] = {
-                                        'nota_fiscal': nota_trata.lstrip('0'),
-                                        'data_email': message.received,
-                                        'chave_acesso': chave_trata,
-                                        'email_vinculado': message.subject,
-                                        'serie_nf': serie_trata,
-                                        'data_emissao': data_comp,
-                                        'cnpj': cnpj_trata,
-                                        'nfe': nfe_semzero.lstrip('0'),
-                                        'chave_comp': chave_trata,
-                                        'transportadora': 'CHS',
-                                        'peso_comp': '0',
-                                        'serie_comp': '0'
-                                    }
+                                        try:
+                                            nfe_formatado = nfe.group(1)
+                                            nfe_semponto = nfe_formatado.replace('.', '')
+                                            nfe_semzero = nfe_semponto if nfe_semponto[
+                                                                          0:3] != '000' else nfe_semponto[3:]
+                                        except IndexError:
+                                            nfe_semzero = 0
+                                        nf_pdf_map[attachment.name] = {
+                                            'nota_fiscal': '0',
+                                            'data_email': message.received,
+                                            'chave_acesso': chave_trata,
+                                            'email_vinculado': message.subject,
+                                            'serie_nf': serie_trata,
+                                            'data_emissao': data_comp,
+                                            'cnpj': cnpj_trata,
+                                            'nfe': nfe_semzero.lstrip('0'),
+                                            'chave_comp': chave_trata,
+                                            'transportadora': 'CHS',
+                                            'peso_comp': 'SEM LEITURA',
+                                            'serie_comp': 'SEM LEITURA'
+                                        }
+                                        print('zerado')
+                                    else:
+                                        nf_pdf_map[nota_trata.lstrip('0')] = {
+                                            'nota_fiscal': nota_trata.lstrip('0'),
+                                            'data_email': message.received,
+                                            'chave_acesso': chave_trata,
+                                            'email_vinculado': message.subject,
+                                            'serie_nf': serie_trata,
+                                            'data_emissao': data_comp,
+                                            'cnpj': cnpj_trata,
+                                            'nfe': nfe_semzero.lstrip('0'),
+                                            'chave_comp': chave_trata,
+                                            'transportadora': 'CHS',
+                                            'peso_comp': '0',
+                                            'serie_comp': '0'
+                                        }
 
 
                     os.remove(temp_pdf.name)
@@ -332,98 +345,109 @@ def process_chs(message, save_folder, nf_pdf_map, nf_zip_map):
                                                 primeiro_cnpj.append(cnpj_match[0])
                                         if not segundo_cnpj:
                                             segundo_cnpj.append(0)
-
-                                        for nf, chave, serie, nfe, dta, cnpj in zip(notas_fiscais, chave_comp,
-                                                                                    serie_matches,
-                                                                                    nfe_match, data_matches,
-                                                                                    primeiro_cnpj):
-                                            nota = []
-                                            for i in notas_fiscais:
-                                                if i != 0:
-                                                    try:
-                                                        if i != 'e':
-                                                            notas = None
-                                                            for x in range(0, 10):
-                                                                notas = i.group(x)
-                                                                if notas is not None:
+                                        vazio = [notas_fiscais, chave_comp, serie_matches, nfe_match, data_matches, primeiro_cnpj]
+                                        print(vazio)
+                                        if None in vazio:
+                                            print(f'Encontrado vazio em um dos valores\n'
+                                                  f'Nota: {notas_fiscais}\n'
+                                                  f'NFE: {nfe_match}\n'
+                                                  f'Data: {data_matches}\n'
+                                                  f'Chave: {chave_comp}\n'
+                                                  f'Serie: {serie_matches}\n'
+                                                  f'CNPJ: {primeiro_cnpj}\n')
+                                            break
+                                        else:
+                                            for nf, chave, serie, nfe, dta, cnpj in zip(notas_fiscais, chave_comp,
+                                                                                        serie_matches,
+                                                                                        nfe_match, data_matches,
+                                                                                        primeiro_cnpj):
+                                                nota = []
+                                                for i in notas_fiscais:
+                                                    if i != 0:
+                                                        try:
+                                                            if i != 'e':
+                                                                notas = None
+                                                                for x in range(0, 10):
+                                                                    notas = i.group(x)
+                                                                    if notas is not None:
+                                                                        break
+                                                                nota_trata = re.sub(r'[\D]', '', notas)
+                                                                nota.append(nota_trata)
+                                                        except IndexError:
+                                                            nota_trata = 0
+                                                        try:
+                                                            for d in range(1, 4):
+                                                                data_ajust = dta.group(d)
+                                                                if data_ajust is not None:
                                                                     break
-                                                            nota_trata = re.sub(r'[\D]', '', notas)
-                                                            nota.append(nota_trata)
-                                                    except IndexError:
-                                                        nota_trata = 0
-                                                    try:
-                                                        for d in range(1, 4):
-                                                            data_ajust = dta.group(d)
-                                                            if data_ajust is not None:
-                                                                break
 
-                                                    except IndexError:
-                                                        data_ajust = 0
-                                                    try:
-                                                        for e in range(0, 1):
-                                                            cnpjem = cnpj.group(e)
-                                                            if cnpjem is not None:
-                                                                break
-                                                        emitente = re.sub(r'[./-]', '', cnpjem)
-                                                    except IndexError:
-                                                        emitente = 0
+                                                        except IndexError:
+                                                            data_ajust = 0
+                                                        try:
+                                                            for e in range(0, 1):
+                                                                cnpjem = cnpj.group(e)
+                                                                if cnpjem is not None:
+                                                                    break
+                                                            emitente = re.sub(r'[./-]', '', cnpjem)
+                                                        except IndexError:
+                                                            emitente = 0
 
-                                                    try:
-                                                        for c in range(0, 2):
-                                                            chave_comp = chave.group(c)
-                                                            if chave_comp is not None:
-                                                                break
-                                                        chave_trata = re.sub(r'[\D]', '', chave_comp)
-                                                    except IndexError:
-                                                        chave_trata = 0
+                                                        try:
+                                                            for c in range(0, 2):
+                                                                chave_comp = chave.group(c)
+                                                                if chave_comp is not None:
+                                                                    break
+                                                            chave_trata = re.sub(r'[\D]', '', chave_comp)
+                                                        except IndexError:
+                                                            chave_trata = 0
 
-                                                    try:
-                                                        for s in range(0, 2):
-                                                            serie_comp = serie.group(s)
-                                                            if serie_comp is not None:
-                                                                break
-                                                        serie_trata = re.sub(r'[\D]', '', serie_comp)
-                                                    except IndexError:
-                                                        serie_trata = 0
+                                                        try:
+                                                            for s in range(0, 2):
+                                                                serie_comp = serie.group(s)
+                                                                if serie_comp is not None:
+                                                                    break
+                                                            serie_trata = re.sub(r'[\D]', '', serie_comp)
+                                                        except IndexError:
+                                                            serie_trata = 0
 
-                                                    try:
-                                                        nfe_formatado = nfe.group(1)
-                                                        nfe_semponto = nfe_formatado.replace('.', '')
-                                                        nfe_semzero = nfe_semponto if nfe_semponto[
-                                                                                      0:3] != '000' else nfe_semponto[
-                                                                                                         3:]
-                                                    except IndexError:
-                                                        nfe_semzero = 0
+                                                        try:
+                                                            nfe_formatado = nfe.group(1)
+                                                            nfe_semponto = nfe_formatado.replace('.', '')
+                                                            nfe_semzero = nfe_semponto if nfe_semponto[
+                                                                                          0:3] != '000' else nfe_semponto[
+                                                                                                             3:]
+                                                        except IndexError:
+                                                            nfe_semzero = 0
 
-                                                if i == 0:
-                                                    nf_zip_map[file_name] = {
-                                                        'nota_fiscal': '0',
-                                                        'data_email': message.received,
-                                                        'chave_acesso': 'SEM LEITURA',
-                                                        'email_vinculado': message.subject,
-                                                        'serie_nf': 'SEM LEITURA',
-                                                        'data_emissao': 'SEM LEITURA',
-                                                        'cnpj': 'SEM LEITURA',
-                                                        'nfe': '0',
-                                                        'chave_comp': 'SEM LEITURA',
-                                                        'transportadora': 'CHS',
-                                                        'peso_comp': 'SEM LEITURA',
-                                                        'serie_comp': 'SEM LEITURA'
-                                                    }
-                                                    print('zerado')
-                                                else:
-                                                    nf_zip_map[nota_trata.lstrip('0')] = {
-                                                        'nota_fiscal': nota_trata.lstrip('0'),
-                                                        'data_email': message.received,
-                                                        'chave_acesso': chave_trata,
-                                                        'email_vinculado': message.subject,
-                                                        'serie_nf': serie_trata,
-                                                        'data_emissao': data_ajust,
-                                                        'cnpj': cnpj_chs,
-                                                        'nfe': nfe_semzero.lstrip('0'),
-                                                        'chave_comp': chave_trata,
-                                                        'transportadora': 'CHS',
-                                                        'peso_comp': '0',
-                                                        'serie_comp': '0',
-                                                        'emitente': emitente
-                                                    }
+                                                    if i == 0:
+                                                        nf_zip_map[file_name] = {
+                                                            'nota_fiscal': '0',
+                                                            'data_email': message.received,
+                                                            'chave_acesso': 'SEM LEITURA',
+                                                            'email_vinculado': message.subject,
+                                                            'serie_nf': 'SEM LEITURA',
+                                                            'data_emissao': 'SEM LEITURA',
+                                                            'cnpj': 'SEM LEITURA',
+                                                            'nfe': '0',
+                                                            'chave_comp': 'SEM LEITURA',
+                                                            'transportadora': 'CHS',
+                                                            'peso_comp': 'SEM LEITURA',
+                                                            'serie_comp': 'SEM LEITURA'
+                                                        }
+                                                        print('zerado')
+                                                    else:
+                                                        nf_zip_map[nota_trata.lstrip('0')] = {
+                                                            'nota_fiscal': nota_trata.lstrip('0'),
+                                                            'data_email': message.received,
+                                                            'chave_acesso': chave_trata,
+                                                            'email_vinculado': message.subject,
+                                                            'serie_nf': serie_trata,
+                                                            'data_emissao': data_ajust,
+                                                            'cnpj': cnpj_chs,
+                                                            'nfe': nfe_semzero.lstrip('0'),
+                                                            'chave_comp': chave_trata,
+                                                            'transportadora': 'CHS',
+                                                            'peso_comp': '0',
+                                                            'serie_comp': '0',
+                                                            'emitente': emitente
+                                                        }

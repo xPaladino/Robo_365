@@ -189,33 +189,42 @@ def process_amaggi(message, save_folder, nf_pdf_map,nf_zip_map):
                                                                 serie_split = 0
                                                             replica_serie.append(serie_split)
 
+                                vazio = [replica_nota,replica_chave,replica_nfe,replica_data,replica_serie]
+                                if None in vazio:
+                                    print(f'Encontrado vazio em um dos valores\n'
+                                          f'Nota: {replica_nota}\n'
+                                          f'NFE: {replica_nfe}\n'
+                                          f'Data: {replica_data}\n'
+                                          f'Chave: {replica_chave}\n'
+                                          f'Serie: {replica_serie}')
+                                    break
+                                else:
+                                    for nota, chave,nfe, data,serie in zip(replica_nota,replica_chave,replica_nfe,replica_data,replica_serie):
+                                        if chave != 0 and isinstance(chave,
+                                                                     re.Match):
+                                            chaves = None
+                                            for i in range(1, 4):
+                                                chaves = chave.group(i)
+                                                if chaves is not None:
+                                                    break
+                                            chave_ajustada = ''.join(chaves.split()) if chaves else '0'
+                                        else:
+                                            chave_ajustada = '0'
 
-                                for nota, chave,nfe, data,serie in zip(replica_nota,replica_chave,replica_nfe,replica_data,replica_serie):
-                                    if chave != 0 and isinstance(chave,
-                                                                 re.Match):
-                                        chaves = None
-                                        for i in range(1, 4):
-                                            chaves = chave.group(i)
-                                            if chaves is not None:
-                                                break
-                                        chave_ajustada = ''.join(chaves.split()) if chaves else '0'
-                                    else:
-                                        chave_ajustada = '0'
+                                        cnpj_amaggi = '77294254000356'
 
-                                    cnpj_amaggi = '77294254000356'
-
-                                    nf_pdf_map[nota] = {'nota_fiscal': nota,
-                                                'data_email': message.received,
-                                                'data_emissao': data,
-                                                'chave_comp': chave_ajustada,
-                                                'serie_nf': serie,
-                                                'cnpj': cnpj_amaggi,
-                                                'nfe': nfe.lstrip('0'),
-                                                'email_vinculado': message.subject,
-                                                'transportadora': 'AMAGGI',
-                                                'peso_comp': '0',
-                                                'serie_comp': '0'
-                                                 }
+                                        nf_pdf_map[nota] = {'nota_fiscal': nota,
+                                                    'data_email': message.received,
+                                                    'data_emissao': data,
+                                                    'chave_comp': chave_ajustada,
+                                                    'serie_nf': serie,
+                                                    'cnpj': cnpj_amaggi,
+                                                    'nfe': nfe.lstrip('0'),
+                                                    'email_vinculado': message.subject,
+                                                    'transportadora': 'AMAGGI',
+                                                    'peso_comp': '0',
+                                                    'serie_comp': '0'
+                                                     }
 
 
                             except PDFSyntaxError:
@@ -494,34 +503,44 @@ def process_amaggi(message, save_folder, nf_pdf_map,nf_zip_map):
                                                                                 serie_split = 0
                                                                             replica_serie.append(serie_split)
 
-                                                    for nota, chave, nfe, data, serie in zip(
-                                                            replica_nota, replica_chave, replica_nfe,
-                                                            replica_data, replica_serie):
-                                                        if chave != 0 and isinstance(chave,
-                                                                                     re.Match):
-                                                            chaves = None
-                                                            for i in range(1, 4):
-                                                                chaves = chave.group(i)
-                                                                if chaves is not None:
-                                                                    break
-                                                            chave_ajustada = ''.join(
-                                                                chaves.split()) if chaves else '0'
-                                                        else:
-                                                            chave_ajustada = '0'
-                                                        if '.' in data and '/' not in data:
-                                                            data = data.replace('.','/')
-                                                        cnpj_amaggi = '77294254000356'
-                                                        nf_zip_map[nota] = {'nota_fiscal': nota,
-                                                                            'data_email': message.received,
-                                                                            'data_emissao': data,
-                                                                            'chave_comp': chave_ajustada,
-                                                                            'serie_nf': serie,
-                                                                            'cnpj': cnpj_amaggi,
-                                                                            'nfe': nfe.lstrip('0'),
-                                                                            'email_vinculado': message.subject,
-                                                                            'transportadora': 'AMAGGI',
-                                                                            'peso_comp': '0',
-                                                                            'serie_comp': '0'
-                                                                            }
+                                                    vazio = [replica_nota, replica_chave, replica_nfe, replica_data, replica_serie]
+                                                    if None in vazio:
+                                                        print(f'Encontrado vazio em um dos valores\n'
+                                                              f'Nota: {replica_nota}\n'
+                                                              f'NFE: {replica_nfe}\n'
+                                                              f'Data: {replica_data}\n'
+                                                              f'Chave: {replica_chave}\n'
+                                                              f'Serie: {replica_serie}')
+                                                        break
+                                                    else:
+                                                        for nota, chave, nfe, data, serie in zip(
+                                                                replica_nota, replica_chave, replica_nfe,
+                                                                replica_data, replica_serie):
+                                                            if chave != 0 and isinstance(chave,
+                                                                                         re.Match):
+                                                                chaves = None
+                                                                for i in range(1, 4):
+                                                                    chaves = chave.group(i)
+                                                                    if chaves is not None:
+                                                                        break
+                                                                chave_ajustada = ''.join(
+                                                                    chaves.split()) if chaves else '0'
+                                                            else:
+                                                                chave_ajustada = '0'
+                                                            if '.' in data and '/' not in data:
+                                                                data = data.replace('.','/')
+                                                            cnpj_amaggi = '77294254000356'
+                                                            nf_zip_map[nota] = {'nota_fiscal': nota,
+                                                                                'data_email': message.received,
+                                                                                'data_emissao': data,
+                                                                                'chave_comp': chave_ajustada,
+                                                                                'serie_nf': serie,
+                                                                                'cnpj': cnpj_amaggi,
+                                                                                'nfe': nfe.lstrip('0'),
+                                                                                'email_vinculado': message.subject,
+                                                                                'transportadora': 'AMAGGI',
+                                                                                'peso_comp': '0',
+                                                                                'serie_comp': '0'
+                                                                                }
 
                                                     #print(f'{file_dir}-{notas_fiscais}')

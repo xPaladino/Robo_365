@@ -8,6 +8,7 @@ import pandas as pd
 from PyPDF2 import PdfReader
 
 
+
 def process_bunge(message, salve_folder, nf_excel_map, nf_zip_map):
     """
     Essa função é responsável por ler e tratar os dados vindos do Cliente BUNGE, extraído de um arquivo Excel,
@@ -31,7 +32,6 @@ def process_bunge(message, salve_folder, nf_excel_map, nf_zip_map):
             print(f'{message.received} - {message.subject}')
             for attachment in message.attachments:
                 file_extension = os.path.splitext(attachment.name)[1].lower()
-
                 pdf_cont = 0
                 zip_cont = 0
                 if file_extension == ".zip":
@@ -174,19 +174,6 @@ def process_bunge(message, salve_folder, nf_excel_map, nf_zip_map):
 
                                             except Exception as e:
                                                 print(f'Erro ao abrir o Excel: {e}')
-                            """ 
-                            if file_path.endswith('.pdf'):
-                                with open(file_path, 'rb') as pdf_file:
-                                    pdf_reader = PdfReader(pdf_file)
-                                    pdf_text = ''
-                                    for page in pdf_reader.pages:
-                                        pdf_text += page.extract_text()
-                            zip_ref.extractall(tmp_dir)
-                        for file_name in os.listdir(tmp_dir):
-                            file_path = os.path.join(tmp_dir, file_name)
-
-                            print(file_name)"""
-
                 if file_extension == ".pdf":
                     print(attachment.name)
                     decoded_content = base64.b64decode(attachment.content)
@@ -302,13 +289,11 @@ def process_bunge(message, salve_folder, nf_excel_map, nf_zip_map):
 
                                         replica_serie_nfe.append(serie_nfe[i % len(serie_nfe)])
                                         replica_cnpj.append(cnpj_nfe[i % len(cnpj_nfe)])
-
                             for nf, chave, nfe, chave_comp, peso_bungue, cnpj in zip(
                                     nf_ref_cleaned,
                                     chave_ref_clean, replica_nfe, replica_chave_nfe_ref, dif_peso, replica_cnpj):
                                 chaves = ''.join(chave)
                                 chaves_comp = ''.join(chave_comp)
-
                                 nf_excel_map[nf] = {'nota_fiscal': nf,
                                                     'data_email': message.received,
                                                     'chave_acesso': chaves,
@@ -321,13 +306,12 @@ def process_bunge(message, salve_folder, nf_excel_map, nf_zip_map):
                                                     'peso_nfe': peso_bungue,
                                                     'serie_comp': '0',
                                                     'peso_comp': '0',
-                                                    'transportadora': 'BUNGE'}  # peso_bungue})
+                                                    'transportadora': 'BUNGE'}
 
                         elif 'NOTA' in df.columns and 'CHAVE' in df.columns:
                             cnpj_bunge = '84046101028101'
                             nf_ref = df['NOTA'].dropna().astype(str)
                             nf_ref = [nf.split('.')[0] for nf in nf_ref]
-
                             if 'CHAVE DE REFERÊNCIA' in df.columns:
                                 chave_ref_clean = df['CHAVE DE REFERÊNCIA'].dropna().astype(
                                     str).str.extract(
@@ -338,7 +322,6 @@ def process_bunge(message, salve_folder, nf_excel_map, nf_zip_map):
                                     str).str.extract(
                                     r'(\d{44})')
                                 chave_ref_clean = chave_ref_clean.dropna().values.tolist()
-                            print(chave_ref_clean)
                             nf_ref_cleaned = df['NOTA DE REFERÊNCIA'].dropna().astype(str)
                             nf_ref_cleaned = [nf.split('-')[0] for nf in nf_ref_cleaned]
                             if pdf_excel_chave:
@@ -347,7 +330,6 @@ def process_bunge(message, salve_folder, nf_excel_map, nf_zip_map):
                             replica_chave_nfe_ref = []
                             replica_serie_nfe = []
                             replica_chave = []
-
                             for nf, chave_comp, nfe in zip(
                                     nf_ref,
                                     chave_ref_clean, nf_ref_cleaned):
@@ -411,8 +393,6 @@ def process_bunge(message, salve_folder, nf_excel_map, nf_zip_map):
                             if not dif_peso:
                                 dif_peso = [0]
 
-                            #data_doc = df['Data documento'].dropna().astype(str)
-                            #data_doc = [data.split('.')[0] for data in data_doc]
                             dta_emissao = df['Data documento'].dropna().astype(str)
 
                             data_doc = dta_emissao.apply(
@@ -452,7 +432,6 @@ def process_bunge(message, salve_folder, nf_excel_map, nf_zip_map):
 
                                 chaves = ''.join(chave)
                                 chaves_comp = ''.join(chave_comp)
-
                                 nf_excel_map[nf] = {'nota_fiscal': nf,
                                                     'data_email': message.received,
                                                     'chave_acesso': chaves,
@@ -466,5 +445,5 @@ def process_bunge(message, salve_folder, nf_excel_map, nf_zip_map):
                                                     'serie_comp': '0',
                                                     'peso_comp': '0',
                                                     'transportadora': 'BUNGE'}  # peso_bunge})
-                        #if 'NFE' in df.columns and :
+
                     os.remove(temp_xlsx.name)

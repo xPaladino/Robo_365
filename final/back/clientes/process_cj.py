@@ -145,7 +145,6 @@ def process_cj(message, save_folder, nf_pdf_map, nf_excel_map):
                             df2 = pd.read_excel(temp_xlsx.name, engine='openpyxl', header=0)
                             df2.columns = df2.columns.str.strip()
 
-                            print(df2.columns)
                             cnpj_cj = '21294708000334'
                             if 'Unnamed: 0' in df2.columns:
                                 pass
@@ -162,20 +161,17 @@ def process_cj(message, save_folder, nf_pdf_map, nf_excel_map):
                                     replica_chave, replica_nfe, replica_serie, pdf_ajeita = [], [], [], []
                                     ajeita = sorted(pdf_nfe)
                                     ajeita_nfe = sorted(nf_ref_cleaned)
-                                    # print(df.columns)
                                     for i in ajeita:
                                         pdf_ajeita.append(i)
-
                                     for i, nf_ref in enumerate(nf_ref_cleaned):
-
                                         for nfe, serie, chave in zip(pdf_nfe, pdf_serie, pdf_chave):
-
                                             if nfe == nf_ref:
                                                 replica_nfe.append(nfe)
                                                 replica_serie.append(serie)
                                                 replica_chave.append(chave)
                                             else:
                                                 pass
+
                                     for nota, nf, nfe, chave_comp, \
                                             peso_nfe, data, serie in zip(
                                         nota_cleaned, nf_ref_cleaned, replica_nfe,
@@ -356,16 +352,8 @@ def process_cj(message, save_folder, nf_pdf_map, nf_excel_map):
                                             r'NF\s+Nr\s+(\d+)',
                                             pdf_reader,
                                             re.IGNORECASE))
-                            # Ref. Compl. NF: 67506, 67599, 67674, 67899, 67557, 67541, 67542, 67684, 67604, 67685, 67786, 67900, 67539, 67686
                             if not notas_fiscais:
                                 notas_fiscais.append(0)
-
-                            """COMPLEMENTO
-                            REFERENTE
-                            AS
-                            NOTAS
-                            35.692 / 35.694 / 35.737 / 35.745 / 35.812 / 35.830 / 35.864"""
-
                             cnpj_match.extend(
                                 re.finditer(r'(\d{2}.\d{3}.\d{3}/\d{4}-\d{2})', pdf_reader,
                                             re.IGNORECASE))
@@ -451,7 +439,6 @@ def process_cj(message, save_folder, nf_pdf_map, nf_excel_map):
                                     if i is not None:
                                         procura = re.findall(r'\d+', i)
 
-                                        print(f' procura {procura}')
                                         filtra = [num for num in procura if len(num) > 1]
 
                                         replica_nota.append(filtra)

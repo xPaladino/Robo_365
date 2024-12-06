@@ -71,7 +71,6 @@ def process_adm(message, save_folder, nf_pdf_map):
                                 pdf_reader, re.IGNORECASE))
                             if not notas_fiscais:
                                 notas_fiscais.append(0)
-                            print(notas_fiscais)
 
                             chave_acesso_match = (re.findall(
                                 r'(?<!NFe Ref\.:\()\b\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\b|'
@@ -124,13 +123,14 @@ def process_adm(message, save_folder, nf_pdf_map):
                                 nfe = []
                                 nfe.extend(
                                     re.finditer(r'\d+No\.\s*(\d{6,9})|SÉRIE:\s*(\d{4,})|lado\s*(\d{3}\.\d{3}\.\d{3})|'
-                                                r'NF-e\s+Nº\s+(\d+\s+\d+\s+\d+)|(?:NF-e\s+Nº)\s+(\d+(?:\.\d+)*)|NF-e\s*N°\s*(\d+\.\d+\.\d+)',
+                                                r'NF-e\s+Nº\s+(\d+\s+\d+\s+\d+)|(?:NF-e\s+Nº)\s+(\d+(?:\.\d+)*)|NF-e\s*N°\s*(\d+\.\d+\.\d+)|'
+                                                r'VENCIMENTO\s*V\s*ALOR(\d+)',
                                                 pdf_text, re.IGNORECASE))
 
                                 #N° 000.543.973
-                                #print(pdf_text)
                                 if not nfe:
                                     nfe.append(0)
+
 
                             cnpj_adm = '02003402007269'
                             #notas_fiscais = sorted(list(set(notas_fiscais)))
@@ -184,6 +184,7 @@ def process_adm(message, save_folder, nf_pdf_map):
                             replica_data = []
                             replica_chave_comp = []
                             replica_nfe = []
+
                             for nf in replica_nota:
                                 if nf != 0:
                                     for serie_match, data_match, chave, nfe_comp in zip(serie_matches,
@@ -224,21 +225,23 @@ def process_adm(message, save_folder, nf_pdf_map):
                                                 chave_trat = re.sub(r'[\D]', '', ch_trat)
                                             except IndexError:
                                                 chave_trat = 0
-                                            print(f' chave - {chave_trat}')
                                         replica_chave_comp.append(chave_trat)
 
                                         if nfe_comp != 0:
                                             try:
-
                                                 for x in range(1, 10):
                                                     if nfe_comp and isinstance(nfe_comp, re.Match):
+                                                        print(nfe_comp)
                                                         comp_nota = nfe_comp.group(x)
                                                         if comp_nota is not None:
                                                             break
                                                     else:
                                                         comp_nota = None
-                                                if comp_nota:
+
+                                                if not nfe_comp.group(7):
                                                     nota_comp = comp_nota.replace('.', '')
+                                                elif nfe_comp.group(7):
+                                                    nota_comp = comp_nota
                                                 else:
                                                     nota_comp = 0
                                             except IndexError:
@@ -246,39 +249,48 @@ def process_adm(message, save_folder, nf_pdf_map):
 
                                         replica_nfe.append(nota_comp)
 
+                            vazio = [replica_nota, replica_serie, replica_data, replica_chave_comp, replica_nfe]
 
-
-                            for nota, serie_match, data_match, chave, nfe_comp in zip(replica_nota, replica_serie, replica_data,
-                                                                                    replica_chave_comp, replica_nfe):
-                                print(f'teste {nfe_comp}')
-                                nf_pdf_map[nota] = {
-                                    'nota_fiscal': nota,
-                                    'data_email': message.received,
-                                    'chave_acesso': '0',
-                                    'email_vinculado': message.subject,
-                                    'serie_nf': serie_match,
-                                    'data_emissao': data_match,
-                                    'cnpj': cnpj_adm,
-                                    'nfe': nfe_comp.lstrip('0'),
-                                    'chave_comp': chave,
-                                    'transportadora': 'ADM',
-                                    'peso_comp': '0',
-                                    'serie_comp': '0'
-                                }
-                        else:
-                            print(f"{attachment} não é um arquivo PDF")
-                            nf_pdf_map[attachment.name] = {
-                                'nota_fiscal': '0',
-                                'data_email': message.received,
-                                'chave_acesso': 'PDF INVÁLIDO',
-                                'email_vinculado': message.subject,
-                                'serie_nf': 'PDF INVÁLIDO',
-                                'data_emissao': 'PDF INVÁLIDO',
-                                'cnpj': 'PDF INVÁLIDO',
-                                'nfe': '0',
-                                'chave_comp': 'PDF INVÁLIDO',
-                                'transportadora': 'AMAGGI',
-                                'peso_comp': 'PDF INVÁLIDO',
-                                'serie_comp': 'PDF INVÁLIDO'
-                            }
+                            if None in vazio:
+                                print(f'Encontrado vazio em um dos valores\n'
+                                      f'Nota: {replica_nota}\n'
+                                      f'NFE: {replica_nfe}\n'
+                                      f'Data: {replica_data}\n'
+                                      f'Chave: {replica_chave_comp}\n'
+                                      f'Serie: {replica_serie}')
+                                break
+                            else:
+                                for nota, serie_match, data_match, chave, nfe_comp in zip(replica_nota, replica_serie, replica_data,
+                                                                                        replica_chave_comp, replica_nfe):
+                                    print(f'teste {nfe_comp}')
+                                    nf_pdf_map[nota] = {
+                                        'nota_fiscal': nota,
+                                        'data_email': message.received,
+                                        'chave_acesso': '0',
+                                        'email_vinculado': message.subject,
+                                        'serie_nf': serie_match,
+                                        'data_emissao': data_match,
+                                        'cnpj': cnpj_adm,
+                                        'nfe': nfe_comp.lstrip('0'),
+                                        'chave_comp': chave,
+                                        'transportadora': 'ADM',
+                                        'peso_comp': '0',
+                                        'serie_comp': '0'
+                                    }
+                                else:
+                                    print(f"{attachment} não é um arquivo PDF")
+                                    nf_pdf_map[attachment.name] = {
+                                        'nota_fiscal': '0',
+                                        'data_email': message.received,
+                                        'chave_acesso': 'PDF INVÁLIDO',
+                                        'email_vinculado': message.subject,
+                                        'serie_nf': 'PDF INVÁLIDO',
+                                        'data_emissao': 'PDF INVÁLIDO',
+                                        'cnpj': 'PDF INVÁLIDO',
+                                        'nfe': '0',
+                                        'chave_comp': 'PDF INVÁLIDO',
+                                        'transportadora': 'AMAGGI',
+                                        'peso_comp': 'PDF INVÁLIDO',
+                                        'serie_comp': 'PDF INVÁLIDO'
+                                    }
                     os.remove(temp_pdf.name)
